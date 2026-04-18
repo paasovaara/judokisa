@@ -19,10 +19,10 @@ The app redirects `/` → `/fi` automatically via next-intl middleware.
 
 ## Architecture
 
-**Read-only frontend.** This app only reads from the database. All writes come from a separate scraper application. The flow is:
+**Read-only frontend.** This app only reads from the database. All writes come from the scraper in `scraper/`. The flow is:
 
 ```
-scraper (separate repo) → PostgreSQL (Supabase) ← this Next.js app
+scraper/ → PostgreSQL (Supabase) ← Next.js frontend
 ```
 
 Future: a CMS will replace the scraper; auth/registration will be added as a separate layer.

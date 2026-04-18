@@ -1,0 +1,26 @@
+{
+  "name": "judo-scraper",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "scrape": "tsx src/index.ts",
+    "scrape:dry": "tsx src/index.ts --dry-run"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.7.0",
+    "@prisma/client": "^7.7.0",
+    "axios": "^1.9.0",
+    "cheerio": "^1.0.0",
+    "dotenv": "^16.5.0",
+    "pg": "^8.16.0",
+    "slugify": "^1.6.6"
+  },
+  "devDependencies": {
+    "@types/cheerio": "^0.22.35",
+    "@types/node": "^22.15.3",
+    "@types/pg": "^8.11.14",
+    "prisma": "^7.7.0",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

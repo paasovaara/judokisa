@@ -40,7 +40,16 @@
     "placement": "Placement",
     "athlete": "Athlete",
     "club": "Club",
-    "watch_stream": "Watch stream"
+    "watch_stream": "Watch stream",
+    "tab_information": "Information",
+    "tab_athletes": "Athletes",
+    "tab_matches": "Matches",
+    "tab_results": "Results",
+    "tab_livestreams": "Livestreams",
+    "no_athletes": "Athlete data not available",
+    "no_matches": "No matches available",
+    "no_stream": "No livestream available",
+    "registered_count": "Registered athletes"
   },
   "history": {
     "title": "Competitor history",

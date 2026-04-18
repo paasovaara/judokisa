@@ -1,6 +1,6 @@
 # Judo Competition Platform — Application Specification
 
-**Version:** 0.1.0
+**Version:** 0.2.0
 **Status:** Draft
 **Last updated:** 2026-04-18
 
@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-A mobile-first, responsive web platform for browsing Finnish judo competitions, viewing results, and accessing video feeds. This is a public read-only frontend that replaces [judokisa.fi](https://judokisa.fi). Data is populated by a separate scraper application and later by a dedicated CMS.
+A mobile-first, responsive web platform for browsing Finnish judo competitions, viewing results, and accessing video feeds. This is a public read-only frontend that replaces [judokisa.fi](https://judokisa.fi). Data is populated by a separate scraper application (`scraper/`) and later by a dedicated CMS.
 
 ### 1.1 Goals
 
@@ -20,12 +20,11 @@ A mobile-first, responsive web platform for browsing Finnish judo competitions, 
 ### 1.2 Out of scope (v1)
 
 - User authentication and accounts
-- Competition registration
+- Competition registration (in-platform — external registration links are shown)
 - Competitor profiles and statistics
 - Club directory
 - Rankings
 - Admin / CMS interface
-- Scraper implementation (separate repository)
 
 ---
 
@@ -33,8 +32,8 @@ A mobile-first, responsive web platform for browsing Finnish judo competitions, 
 
 ```
 ┌─────────────────┐        ┌──────────────────────────┐
-│   Scraper app   │──────▶ │   PostgreSQL (Supabase)   │
-│  (separate repo)│  write │                           │
+│  scraper/        │──────▶ │   PostgreSQL (Supabase)   │
+│  (Node.js)       │  write │                           │
 └─────────────────┘        └──────────────────────────┘
                                         │ read (Prisma)
                             ┌───────────▼──────────────┐
@@ -43,10 +42,10 @@ A mobile-first, responsive web platform for browsing Finnish judo competitions, 
                             └──────────────────────────┘
 ```
 
-- **Frontend**: Next.js 14+ (App Router) + TypeScript + Tailwind CSS
-- **ORM**: Prisma (shared schema, used by both frontend and scraper)
+- **Frontend**: Next.js 16 (App Router) + TypeScript + Tailwind CSS v4
+- **ORM**: Prisma v7 with `@prisma/adapter-pg` (shared schema, used by both frontend and scraper)
 - **Database**: PostgreSQL hosted on Supabase
-- **Scraper**: Separate Node.js app, out of scope for this repository
+- **Scraper**: `scraper/` subdirectory — Node.js + Cheerio, scrapes judokisa.fi
 - **Hosting**: Vercel (frontend)
 
 The frontend only ever reads from the database. All writes originate from the scraper (v1) or the future CMS.
@@ -213,58 +212,70 @@ enum MatchRound {
 |-------|------|-------------|
 | `/` | Home | Hero, next competitions, latest results |
 | `/competitions` | Competition list | Upcoming + past, filterable |
-| `/competitions/[slug]` | Competition detail | Info, results, video |
+| `/competitions/[slug]` | Competition detail — Information | Categories, weight classes, description |
+| `/competitions/[slug]/athletes` | Competition detail — Athletes | Athlete list by category |
+| `/competitions/[slug]/matches` | Competition detail — Matches | Match table |
+| `/competitions/[slug]/results` | Competition detail — Results | Results by weight/age category |
+| `/competitions/[slug]/livestreams` | Competition detail — Livestreams | Video embed or link |
 | `/history` | Competitor history | Search by athlete name |
 
 ### 6.2 Home (`/`)
 
 **Sections:**
-1. **Hero** — full-bleed banner with site title, tagline, and a CTA to browse competitions
+1. **Hero** — full-bleed banner with `hero.avif` background image, site title, tagline, CTAs
 2. **Upcoming competitions** — next 5 competitions as cards (name, date, city, type badge, registration deadline if open)
 3. **Latest results** — 5 most recently completed competitions with top-3 podium per weight category
-4. **Quick search** — search bar that links to `/history?q=`
 
 ### 6.3 Competition List (`/competitions`)
 
 **Features:**
 - Tab switcher: **Upcoming** / **Past**
-- Filters (collapsible on mobile):
-  - Search by name or city
-  - Competition type (Tournament, Championship, Kata, etc.)
-  - Age/weight category
-  - Date range (past only)
-- Sort: by date (default), by name, by city
-- Competition cards showing:
-  - Name, type badge, status badge
-  - Date range and city
-  - Capacity bar (registered / max) when available
-  - Registration deadline (with urgency colour when <7 days)
-  - "Full" or "Closed" overlay when applicable
-- Pagination (20 per page) or infinite scroll
+- Filters: search by name or city, competition type selector
+- Competition cards: name, type badge, status badge, date range, city, capacity bar, registration deadline
+- Pagination (20 per page)
 
 ### 6.4 Competition Detail (`/competitions/[slug]`)
 
-**Sections:**
-1. **Header** — name, type, status badge, date, city/venue, organiser
-2. **Info panel** — registration deadline, capacity, external registration link button, categories
-3. **Video** — embedded YouTube player or link if `videoUrl` is set
-4. **Results** — only shown when status is `COMPLETED`
-   - Tab per weight/age category group
-   - Podium (1st, 2nd, 3rd) highlighted
-   - Full results table: placement, athlete name, club
-5. **Matches** (optional, if data available) — bracket or table view of matches
+All sub-pages share a **common layout** with:
+- Back link to competition list
+- Competition header: name, type/status badges, date, city/venue
+- Details strip: date, location, registration deadline, capacity bar
+- Register CTA button (links to external `registrationUrl`) when UPCOMING and not full
+- **Sub-navigation tab bar** (horizontally scrollable on mobile)
+
+#### Tab: Information (`/competitions/[slug]`)
+- Age/division categories as pill tags
+- Weight categories as pill tags
+- Description / additional information (free text from organiser)
+
+#### Tab: Athletes (`/competitions/[slug]/athletes`)
+- **Completed competitions**: athlete list grouped by weight/age category, derived from result data
+- **Upcoming/ongoing**: registration count stat + placeholder message
+- Future: dedicated `Registrant` model in DB once scraper supports it
+
+#### Tab: Matches (`/competitions/[slug]/matches`)
+- Table: category, round, athlete 1 vs athlete 2, score
+- Winner name bolded
+- Empty state when no match data
+
+#### Tab: Results (`/competitions/[slug]/results`)
+- Responsive card grid, one card per weight/age category
+- Each card: category heading + placement table (placement, athlete name, club)
+- 1st/2nd/3rd highlighted in gold/silver/bronze
+- Empty state before competition is completed
+
+#### Tab: Livestreams (`/competitions/[slug]/livestreams`)
+- YouTube URL → embedded `<iframe>` player (aspect-video)
+- Other URL → styled "Watch stream" button
+- Empty state when no `videoUrl` set
 
 ### 6.5 Competitor History (`/history`)
 
 **Features:**
 - Search input for athlete name (first + last)
-- Optionally enter a second athlete name to see head-to-head
-- **Single athlete view:**
-  - Competition history table: competition name, date, city, weight category, placement
-  - Sortable columns, paginated (15 per page)
-- **Head-to-head view:**
-  - All matches between the two athletes: competition, date, scores, winner
-  - Summary: win/loss record
+- Optional second athlete name for head-to-head view
+- **Single athlete**: competition history table (competition, date, city, category, placement)
+- **Head-to-head**: all matches between the two athletes (competition, date, round, score, winner)
 
 ---
 
@@ -272,13 +283,14 @@ enum MatchRound {
 
 ### 7.1 Performance
 - Core Web Vitals target: LCP < 2.5s, CLS < 0.1, INP < 200ms
-- Competition list and detail pages statically generated (ISR, revalidate every 10 minutes)
-- History search via server-side API route (dynamic)
+- Competition detail and sub-pages statically generated (`generateStaticParams`)
+- History search server-rendered on demand
 
 ### 7.2 Responsive / Mobile
 - Breakpoints: `sm` 640px, `md` 768px, `lg` 1024px, `xl` 1280px (Tailwind defaults)
-- All tables scroll horizontally on mobile with sticky first column
-- Navigation: hamburger menu on mobile, full nav on `md+`
+- All tables scroll horizontally on mobile
+- Sub-navigation tab bar scrolls horizontally on mobile (all tabs always reachable)
+- Global nav: hamburger menu on mobile, full nav on `md+`
 
 ### 7.3 Internationalisation
 - Default language: Finnish (`fi`)
@@ -302,6 +314,7 @@ enum MatchRound {
 
 - **Authentication** — NextAuth.js with email + social login
 - **Registration flow** — athletes register for competitions within the platform
+- **Registrant model** — store individual registered athletes per competition (requires scraper update)
 - **CMS** — replaces scraper; organizers manage competitions via an admin UI
 - **Competitor profiles** — personal stats, history, club affiliation
 - **Rankings** — national rankings by age/weight category
@@ -310,23 +323,51 @@ enum MatchRound {
 
 ---
 
-## 9. Repository Structure (planned)
+## 9. Repository Structure
 
 ```
 /
 ├── src/
-│   ├── app/                  # Next.js App Router pages
-│   │   ├── [locale]/
-│   │   │   ├── page.tsx              # Home
-│   │   │   ├── competitions/
-│   │   │   │   ├── page.tsx          # Competition list
-│   │   │   │   └── [slug]/page.tsx   # Competition detail
-│   │   │   └── history/
-│   │   │       └── page.tsx          # Competitor history
-│   ├── components/           # Shared UI components
-│   ├── lib/                  # DB client, utilities
-│   └── messages/             # i18n translation files (fi.json, en.json)
+│   ├── app/
+│   │   └── [locale]/
+│   │       ├── page.tsx                        # Home
+│   │       ├── competitions/
+│   │       │   ├── page.tsx                    # Competition list
+│   │       │   ├── CompetitionFilters.tsx
+│   │       │   └── [slug]/
+│   │       │       ├── layout.tsx              # Shared header + sub-nav
+│   │       │       ├── page.tsx                # Information tab
+│   │       │       ├── athletes/page.tsx
+│   │       │       ├── matches/page.tsx
+│   │       │       ├── results/page.tsx
+│   │       │       └── livestreams/page.tsx
+│   │       └── history/
+│   │           ├── page.tsx
+│   │           └── HistorySearch.tsx
+│   ├── components/
+│   │   ├── Navbar.tsx
+│   │   ├── Footer.tsx
+│   │   ├── CompetitionCard.tsx
+│   │   ├── CompetitionSubNav.tsx               # Tab bar (client component)
+│   │   ├── Badge.tsx
+│   │   ├── CapacityBar.tsx
+│   │   ├── ResultsTable.tsx
+│   │   └── SearchInput.tsx
+│   ├── lib/
+│   │   └── db.ts                               # Prisma singleton (pg adapter)
+│   ├── i18n/
+│   │   ├── routing.ts
+│   │   └── request.ts
+│   └── messages/
+│       ├── fi.json
+│       └── en.json
 ├── prisma/
-│   └── schema.prisma         # Shared data schema
-└── spec.md                   # This file
+│   └── schema.prisma                           # Shared schema (frontend + scraper)
+├── scraper/                                    # Standalone Node.js scraper
+│   ├── src/
+│   │   ├── index.ts
+│   │   ├── scrapers/{list,detail}.ts
+│   │   └── utils/{parse,slug}.ts
+│   └── prisma.config.ts                        # References ../prisma/schema.prisma
+└── spec.md
 ```

@@ -40,7 +40,16 @@
     "placement": "Sija",
     "athlete": "Urheilija",
     "club": "Seura",
-    "watch_stream": "Katso lähetys"
+    "watch_stream": "Katso lähetys",
+    "tab_information": "Tiedot",
+    "tab_athletes": "Kilpailijat",
+    "tab_matches": "Ottelut",
+    "tab_results": "Tulokset",
+    "tab_livestreams": "Lähetykset",
+    "no_athletes": "Kilpailijatietoja ei saatavilla",
+    "no_matches": "Ei otteluita saatavilla",
+    "no_stream": "Lähetystä ei saatavilla",
+    "registered_count": "Ilmoittautuneita"
   },
   "history": {
     "title": "Kilpailuhistoria",

@@ -54,24 +54,37 @@ export default async function HomePage({
   return (
     <div>
       {/* Hero */}
-      <section className="bg-primary px-4 py-16 text-center text-white md:py-24">
-        <h1 className="mb-3 text-4xl font-bold tracking-tight md:text-5xl">
-          {t("hero_title")}
-        </h1>
-        <p className="mb-8 text-lg text-blue-100 md:text-xl">{t("hero_subtitle")}</p>
-        <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-          <Link
-            href={`/${locale}/competitions`}
-            className="rounded-lg bg-white px-6 py-3 text-sm font-semibold text-primary transition-opacity hover:opacity-90"
-          >
-            {t("upcoming_title")} →
-          </Link>
-          <Link
-            href={`/${locale}/history`}
-            className="rounded-lg border border-blue-300/50 px-6 py-3 text-sm font-semibold text-blue-100 transition-colors hover:border-white hover:text-white"
-          >
-            {t("search_placeholder")}
-          </Link>
+      <section className="relative overflow-hidden bg-primary-dark px-4 py-16 text-center text-white md:py-28">
+        {/* Background image */}
+        <img
+          src="/hero.avif"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover opacity-30"
+        />
+        {/* Dark gradient overlay for readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-dark/60 via-primary-dark/40 to-primary-dark/80" />
+
+        {/* Content */}
+        <div className="relative z-10">
+          <h1 className="mb-3 text-4xl font-bold tracking-tight drop-shadow md:text-5xl">
+            {t("hero_title")}
+          </h1>
+          <p className="mb-8 text-lg text-blue-100 drop-shadow md:text-xl">{t("hero_subtitle")}</p>
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <Link
+              href={`/${locale}/competitions`}
+              className="rounded-lg bg-white px-6 py-3 text-sm font-semibold text-primary shadow transition-opacity hover:opacity-90"
+            >
+              {t("upcoming_title")} →
+            </Link>
+            <Link
+              href={`/${locale}/history`}
+              className="rounded-lg border border-blue-300/50 px-6 py-3 text-sm font-semibold text-blue-100 transition-colors hover:border-white hover:text-white"
+            >
+              {t("search_placeholder")}
+            </Link>
+          </div>
         </div>
       </section>
 

@@ -17,6 +17,20 @@ export default async function CompetitionAthletesPage({
         status: true,
         registeredCount: true,
         capacity: true,
+        competitors: {
+          orderBy: [{ weightCategory: "asc" }, { name: "asc" }],
+          select: {
+            id: true,
+            name: true,
+            club: true,
+            country: true,
+            beltRank: true,
+            birthYear: true,
+            weightCategory: true,
+            ageCategory: true,
+            gender: true,
+          },
+        },
         results: {
           select: {
             athleteName: true,
@@ -36,25 +50,19 @@ export default async function CompetitionAthletesPage({
   if (!data) notFound();
 
   const t = await getTranslations({ locale, namespace: "competition" });
-  const tComp = await getTranslations({ locale, namespace: "competitions" });
 
-  // For completed competitions, derive athletes from results
-  if (data.status === "COMPLETED" && data.results.length > 0) {
-    // Deduplicate by name (a competitor may appear in multiple categories)
-    const seen = new Set<string>();
-    const athletes = data.results.filter((r) => {
-      if (seen.has(r.athleteName)) return false;
-      seen.add(r.athleteName);
-      return true;
-    });
+  // For completed competitions with no competitors scraped, fall back to results
+  const isCompleted = data.status === "COMPLETED";
+  const useCompetitors = data.competitors.length > 0;
+  const useResults = isCompleted && data.results.length > 0 && !useCompetitors;
 
-    // Group by weight category for display
-    type AthleteRow = (typeof data.results)[number];
-    const byCategory = data.results.reduce(
-      (acc: Record<string, AthleteRow[]>, r: AthleteRow) => {
-        const key = `${r.ageCategory ?? ""} ${r.weightCategory}`.trim();
+  if (useCompetitors) {
+    type CompetitorRow = (typeof data.competitors)[number];
+    const byCategory = data.competitors.reduce(
+      (acc: Record<string, CompetitorRow[]>, c: CompetitorRow) => {
+        const key = `${c.ageCategory ?? ""} ${c.weightCategory}`.trim();
         if (!acc[key]) acc[key] = [];
-        acc[key].push(r);
+        acc[key].push(c);
         return acc;
       },
       {},
@@ -63,10 +71,50 @@ export default async function CompetitionAthletesPage({
     return (
       <div>
         <p className="mb-6 text-sm text-gray-500">
-          {athletes.length} {locale === "fi" ? "kilpailijaa" : "athletes"}
+          {data.competitors.length} {locale === "fi" ? "kilpailijaa" : "athletes"}
         </p>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {(Object.entries(byCategory) as [string, AthleteRow[]][]).map(([category, rows]) => (
+          {(Object.entries(byCategory) as [string, CompetitorRow[]][]).map(([category, rows]) => (
+            <div key={category} className="rounded-xl border border-gray-200 bg-white p-4">
+              <h3 className="mb-3 text-sm font-semibold text-primary">{category}</h3>
+              <ul className="space-y-1.5">
+                {rows.map((c) => (
+                  <li key={c.id} className="flex items-baseline justify-between gap-2">
+                    <span className="text-sm font-medium text-gray-900">{c.name}</span>
+                    <span className="shrink-0 text-xs text-gray-400">
+                      {[c.club, c.country].filter(Boolean).join(" · ")}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (useResults) {
+    type ResultRow = (typeof data.results)[number];
+    const byCategory = data.results.reduce(
+      (acc: Record<string, ResultRow[]>, r: ResultRow) => {
+        const key = `${r.ageCategory ?? ""} ${r.weightCategory}`.trim();
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(r);
+        return acc;
+      },
+      {},
+    );
+
+    const uniqueCount = new Set(data.results.map((r) => r.athleteName)).size;
+
+    return (
+      <div>
+        <p className="mb-6 text-sm text-gray-500">
+          {uniqueCount} {locale === "fi" ? "kilpailijaa" : "athletes"}
+        </p>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {(Object.entries(byCategory) as [string, ResultRow[]][]).map(([category, rows]) => (
             <div key={category} className="rounded-xl border border-gray-200 bg-white p-4">
               <h3 className="mb-3 text-sm font-semibold text-primary">{category}</h3>
               <ul className="space-y-1.5">
@@ -84,7 +132,7 @@ export default async function CompetitionAthletesPage({
     );
   }
 
-  // For upcoming/ongoing competitions, show registration count
+  // No competitor or result data yet
   return (
     <div className="space-y-4">
       {data.registeredCount > 0 && (

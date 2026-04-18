@@ -6,7 +6,6 @@ const BASE_URL = "https://judokisa.fi";
 export interface CompetitionDetail {
   venue: string | null;
   description: string | null;
-  videoUrl: string | null;
   registrationUrl: string | null;
 }
 
@@ -19,20 +18,33 @@ export interface ResultRow {
   placement: number;
 }
 
+export interface CompetitorRow {
+  name: string;
+  country: string | null;
+  club: string | null;
+  beltRank: string | null;
+  gender: "MALE" | "FEMALE";
+  birthYear: number | null;
+  weightCategory: string;
+  ageCategory: string | null;
+}
+
+export interface VideoFeedRow {
+  name: string; // "Tatami 1", "Tatami 2" …
+  url: string;
+}
+
 /**
  * Scrape the info iframe for venue / description.
- * The info tab at /continfo/showcontest0/{id}/ embeds /media/{id}/index.html
  */
 export async function scrapeDetail(sourceId: string): Promise<CompetitionDetail> {
   const detail: CompetitionDetail = {
     venue: null,
     description: null,
-    videoUrl: null,
     registrationUrl: null,
   };
 
   try {
-    // 1. Info tab — fetch the iframe page
     const mediaUrl = `${BASE_URL}/media/${sourceId}/index.html`;
     const { data: mediaHtml } = await axios.get(mediaUrl, { timeout: 10_000 }).catch(() => ({
       data: "",
@@ -40,12 +52,10 @@ export async function scrapeDetail(sourceId: string): Promise<CompetitionDetail>
 
     if (mediaHtml) {
       const $m = cheerio.load(mediaHtml);
-      // Extract venue: look for address patterns in text
       const bodyText = $m("body").text();
       const venueMatch = bodyText.match(/([A-ZÄÖÅ][^\n,]+(?:halli|areena|kenttä|sali|aukio)[^\n,]*)/i);
       if (venueMatch) detail.venue = venueMatch[1].trim();
 
-      // Extract first external registration link (Suomisport, ijf, etc.)
       $m("a[href]").each((_, el) => {
         const href = $m(el).attr("href") ?? "";
         if (
@@ -56,7 +66,6 @@ export async function scrapeDetail(sourceId: string): Promise<CompetitionDetail>
         }
       });
 
-      // Store a trimmed description (first 500 chars of meaningful body text)
       const cleanText = bodyText.replace(/\s+/g, " ").trim();
       if (cleanText.length > 20) {
         detail.description = cleanText.substring(0, 500);
@@ -66,40 +75,95 @@ export async function scrapeDetail(sourceId: string): Promise<CompetitionDetail>
     // Info page unavailable — skip silently
   }
 
-  try {
-    // 2. Video tab
-    const { data: videoHtml } = await axios.get(`${BASE_URL}/continfo/video/${sourceId}/`, {
-      timeout: 10_000,
-    });
-    const $v = cheerio.load(videoHtml);
-
-    // Look for YouTube iframe src or anchor href
-    const iframeSrc = $v("iframe[src*='youtube']").attr("src");
-    if (iframeSrc) {
-      detail.videoUrl = iframeSrc.replace("embed/", "watch?v=");
-    } else {
-      $v("a[href*='youtube'], a[href*='youtu.be']").each((_, el) => {
-        if (!detail.videoUrl) detail.videoUrl = $v(el).attr("href") ?? null;
-      });
-    }
-  } catch {
-    // No video page — skip silently
-  }
-
   return detail;
 }
 
 /**
+ * Scrape the video tab at /continfo/video/{id}/.
+ * The page embeds a JS array: var tatamis = ['url1', '', 'url2', ...]
+ * Buttons are labelled "Tatami 1", "Tatami 2" etc. matching array indices.
+ */
+export async function scrapeVideoFeeds(sourceId: string): Promise<VideoFeedRow[]> {
+  let html: string;
+  try {
+    const { data } = await axios.get(`${BASE_URL}/continfo/video/${sourceId}/`, { timeout: 10_000 });
+    html = data;
+  } catch {
+    return [];
+  }
+
+  const match = html.match(/var\s+tatamis\s*=\s*(\[[\s\S]*?\])/);
+  if (!match) return [];
+
+  let urls: string[];
+  try {
+    urls = JSON.parse(match[1]) as string[];
+  } catch {
+    return [];
+  }
+
+  return urls
+    .map((url, i) => ({ name: `Tatami ${i + 1}`, url: url.trim() }))
+    .filter((feed) => feed.url.length > 0);
+}
+
+/**
+ * Scrape registered competitors at /continfo/showcontest2/{id}/.
+ * Table columns (by index): Name · Country · Club · Belt rank · Gender · Birth year · Category
+ */
+export async function scrapeCompetitors(sourceId: string): Promise<CompetitorRow[]> {
+  let html: string;
+  try {
+    const { data } = await axios.get(`${BASE_URL}/continfo/showcontest2/${sourceId}/`, {
+      timeout: 15_000,
+    });
+    html = data;
+  } catch {
+    return [];
+  }
+
+  const $ = cheerio.load(html);
+  const rows: CompetitorRow[] = [];
+
+  $("#contest_table tbody tr").each((_, row) => {
+    const cells = $(row).find("td");
+    if (cells.length < 7) return;
+
+    const name = cells.eq(0).text().trim();
+    if (!name) return;
+
+    const country = cells.eq(1).text().trim() || null;
+    const club = cells.eq(2).text().trim() || null;
+    const beltRank = cells.eq(3).text().trim() || null;
+    const genderRaw = cells.eq(4).text().trim().toLowerCase();
+    const gender: "MALE" | "FEMALE" = genderRaw === "nainen" || genderRaw === "n" ? "FEMALE" : "MALE";
+    const birthYearRaw = parseInt(cells.eq(5).text().trim(), 10);
+    const birthYear = isNaN(birthYearRaw) ? null : birthYearRaw;
+    const category = cells.eq(6).text().trim();
+
+    // Parse weightCategory from Finnish: "alle 46 kg" → "-46kg", "yli 100 kg" → "+100kg"
+    const weightMatch = category.match(/(alle|yli)\s+(\d+)\s*kg/i);
+    let weightCategory: string;
+    let ageCategory: string | null;
+    if (weightMatch) {
+      const prefix = weightMatch[1].toLowerCase() === "alle" ? "-" : "+";
+      weightCategory = `${prefix}${weightMatch[2]}kg`;
+      ageCategory = category.replace(weightMatch[0], "").trim() || null;
+    } else {
+      // Fallback: grab anything matching a weight pattern
+      const fallbackMatch = category.match(/-?\d+\s*kg/i);
+      weightCategory = fallbackMatch ? fallbackMatch[0] : category;
+      ageCategory = fallbackMatch ? category.replace(fallbackMatch[0], "").trim() || null : null;
+    }
+
+    rows.push({ name, country, club, beltRank, gender, birthYear, weightCategory, ageCategory });
+  });
+
+  return rows;
+}
+
+/**
  * Scrape the results tab at /continfo/results/{id}/.
- *
- * judokisa.fi results tables vary by competition but typically have columns:
- *   Sija | Nimi | Seura | Sarja
- * or:
- *   Sija | Nimi | Seura | Sarja | Sukupuoli
- *
- * We do a best-effort parse:
- * - Find the column indices for placement, name, club, category dynamically
- * - Default gender to MALE unless the category contains "N"/"nainen"/"W"/"women"
  */
 export async function scrapeResults(sourceId: string): Promise<ResultRow[]> {
   let html: string;
@@ -115,11 +179,9 @@ export async function scrapeResults(sourceId: string): Promise<ResultRow[]> {
   const $ = cheerio.load(html);
   const rows: ResultRow[] = [];
 
-  // Locate the results table — judokisa.fi uses #contest_table
   const table = $("#contest_table");
   if (!table.length) return [];
 
-  // Detect column indices from header row
   const headers: string[] = [];
   table.find("thead tr th, tr#hdrrow th").each((_, th) => {
     headers.push($(th).text().trim().toLowerCase());
@@ -133,7 +195,6 @@ export async function scrapeResults(sourceId: string): Promise<ResultRow[]> {
   const seuraIdx = col(["seura", "club"]);
   const sarjaIdx = col(["sarja", "category", "division", "weight"]);
 
-  // Fall back to positional guesses if headers not found
   const placementCol = sijaIdx >= 0 ? sijaIdx : 0;
   const nameCol = nimiIdx >= 0 ? nimiIdx : 1;
   const clubCol = seuraIdx >= 0 ? seuraIdx : 2;
@@ -153,25 +214,15 @@ export async function scrapeResults(sourceId: string): Promise<ResultRow[]> {
     const club = cells.eq(clubCol).text().trim() || null;
     const category = cells.eq(categoryCol).text().trim() || "–";
 
-    // Infer gender from category name
     const gender: "MALE" | "FEMALE" = /\bN\b|nainen|women|nais|girl|female/i.test(category)
       ? "FEMALE"
       : "MALE";
 
-    // Split category into weight + age components where possible
-    // e.g. "U18 -60kg", "-66kg", "Senior -73kg"
     const weightMatch = category.match(/-?\d+\s*kg/i);
     const weightCategory = weightMatch ? weightMatch[0] : category;
     const ageCategory = category.replace(weightCategory, "").trim() || null;
 
-    rows.push({
-      athleteName,
-      club,
-      weightCategory,
-      ageCategory,
-      gender,
-      placement,
-    });
+    rows.push({ athleteName, club, weightCategory, ageCategory, gender, placement });
   });
 
   return rows;

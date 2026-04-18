@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { prisma } from "./lib/db.js";
 import { scrapeCompetitionList } from "./scrapers/list.js";
-import { scrapeDetail, scrapeResults } from "./scrapers/detail.js";
+import { scrapeDetail, scrapeResults, scrapeCompetitors, scrapeVideoFeeds } from "./scrapers/detail.js";
 
 const DRY_RUN =
   process.env.DRY_RUN === "true" || process.argv.includes("--dry-run");
@@ -27,13 +27,23 @@ async function main() {
   let created = 0;
   let updated = 0;
   let resultsUpserted = 0;
+  let competitorsUpserted = 0;
+  let feedsUpserted = 0;
 
   for (const comp of competitions) {
     process.stdout.write(`  ${comp.name} (${comp.sourceId}) ... `);
 
-    // ── 2. Scrape detail (info + video) ──────────────────────────────────
+    // ── 2. Scrape detail (info page) ─────────────────────────────────────
     await sleep(REQUEST_DELAY_MS);
     const detail = await scrapeDetail(comp.sourceId);
+
+    // ── 3. Scrape video feeds ─────────────────────────────────────────────
+    await sleep(REQUEST_DELAY_MS);
+    const videoFeeds = await scrapeVideoFeeds(comp.sourceId);
+
+    // ── 4. Scrape competitors (upcoming + ongoing + completed) ────────────
+    await sleep(REQUEST_DELAY_MS);
+    const competitors = await scrapeCompetitors(comp.sourceId);
 
     const competitionData = {
       name: comp.name,
@@ -48,12 +58,13 @@ async function main() {
       capacity: comp.capacity,
       venue: detail.venue,
       description: detail.description,
-      videoUrl: detail.videoUrl,
       registrationUrl: detail.registrationUrl,
     };
 
     if (DRY_RUN) {
-      console.log(`[dry] ${comp.status}`);
+      console.log(
+        `[dry] ${comp.status} | ${competitors.length} competitors | ${videoFeeds.length} feeds`,
+      );
       continue;
     }
 
@@ -79,13 +90,40 @@ async function main() {
       created++;
     }
 
-    // ── 3. Scrape results for completed competitions ──────────────────────
+    // ── 5. Replace video feeds ────────────────────────────────────────────
+    await prisma.videoFeed.deleteMany({ where: { competitionId } });
+    if (videoFeeds.length > 0) {
+      await prisma.videoFeed.createMany({
+        data: videoFeeds.map((f) => ({ competitionId, name: f.name, url: f.url })),
+      });
+      feedsUpserted += videoFeeds.length;
+    }
+
+    // ── 6. Replace competitors ────────────────────────────────────────────
+    await prisma.competitor.deleteMany({ where: { competitionId } });
+    if (competitors.length > 0) {
+      await prisma.competitor.createMany({
+        data: competitors.map((c) => ({
+          competitionId,
+          name: c.name,
+          country: c.country,
+          club: c.club,
+          beltRank: c.beltRank,
+          gender: c.gender as "MALE" | "FEMALE",
+          birthYear: c.birthYear,
+          weightCategory: c.weightCategory,
+          ageCategory: c.ageCategory,
+        })),
+      });
+      competitorsUpserted += competitors.length;
+    }
+
+    // ── 7. Replace results for completed competitions ─────────────────────
     if (comp.status === "COMPLETED") {
       await sleep(REQUEST_DELAY_MS);
       const results = await scrapeResults(comp.sourceId);
 
       if (results.length > 0) {
-        // Replace all results for this competition on each run
         await prisma.result.deleteMany({ where: { competitionId } });
         await prisma.result.createMany({
           data: results.map((r) => ({
@@ -99,12 +137,14 @@ async function main() {
           })),
         });
         resultsUpserted += results.length;
-        console.log(`✓  ${results.length} results`);
+        console.log(
+          `✓  ${results.length} results | ${competitors.length} competitors | ${videoFeeds.length} feeds`,
+        );
       } else {
-        console.log(`✓  (no results yet)`);
+        console.log(`✓  (no results) | ${competitors.length} competitors | ${videoFeeds.length} feeds`);
       }
     } else {
-      console.log(`✓  ${comp.status}`);
+      console.log(`✓  ${comp.status} | ${competitors.length} competitors | ${videoFeeds.length} feeds`);
     }
   }
 
@@ -112,9 +152,11 @@ async function main() {
 
   console.log(`
 ✅ Done.
-   Competitions created : ${created}
-   Competitions updated : ${updated}
-   Result rows upserted : ${resultsUpserted}
+   Competitions created  : ${created}
+   Competitions updated  : ${updated}
+   Result rows upserted  : ${resultsUpserted}
+   Competitors upserted  : ${competitorsUpserted}
+   Video feeds upserted  : ${feedsUpserted}
 `);
 }
 

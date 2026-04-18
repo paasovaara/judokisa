@@ -13,7 +13,10 @@ export default async function CompetitionLivestreamsPage({
   try {
     data = await prisma.competition.findUnique({
       where: { slug },
-      select: { videoUrl: true, name: true },
+      select: {
+        name: true,
+        videoFeeds: { orderBy: { name: "asc" } },
+      },
     });
   } catch {
     data = null;
@@ -23,40 +26,46 @@ export default async function CompetitionLivestreamsPage({
 
   const t = await getTranslations({ locale, namespace: "competition" });
 
-  if (!data.videoUrl) {
-    return <p className="text-sm text-gray-500">{t("no_stream")}</p>;
+  if (data.videoFeeds.length === 0) {
+    return <p className="text-sm text-gray-500">{t("no_feeds")}</p>;
   }
 
-  const isYouTube =
-    data.videoUrl.includes("youtube.com") || data.videoUrl.includes("youtu.be");
-
-  const embedUrl = isYouTube
-    ? data.videoUrl
-        .replace("watch?v=", "embed/")
-        .replace("youtu.be/", "www.youtube.com/embed/")
-    : null;
-
   return (
-    <div>
-      {embedUrl ? (
-        <div className="aspect-video overflow-hidden rounded-xl shadow">
-          <iframe
-            src={embedUrl}
-            className="h-full w-full"
-            allowFullScreen
-            title={data.name}
-          />
-        </div>
-      ) : (
-        <a
-          href={data.videoUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-        >
-          ▶ {t("watch_stream")}
-        </a>
-      )}
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {data.videoFeeds.map((feed) => {
+        const isYouTube =
+          feed.url.includes("youtube.com") || feed.url.includes("youtu.be");
+
+        return (
+          <div key={feed.id} className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+            <div className="border-b border-gray-100 bg-gray-50 px-4 py-2.5">
+              <span className="text-sm font-semibold text-primary">{feed.name}</span>
+            </div>
+            {isYouTube ? (
+              <div className="aspect-video">
+                <iframe
+                  src={feed.url}
+                  className="h-full w-full"
+                  allowFullScreen
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  title={`${data.name} — ${feed.name}`}
+                />
+              </div>
+            ) : (
+              <div className="flex items-center justify-center px-4 py-8">
+                <a
+                  href={feed.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                >
+                  ▶ {feed.name}
+                </a>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

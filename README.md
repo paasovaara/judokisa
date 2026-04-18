@@ -45,11 +45,13 @@ DATABASE_URL="postgresql://user:password@host:5432/judo?schema=public"
 
 ### 3. Set up the database
 
-Run migrations to create the tables (only needed once, or after schema changes):
+Apply all pending migrations to create or update the tables:
 
 ```bash
-npx prisma migrate dev --name init
+npx prisma migrate deploy
 ```
+
+Use `migrate deploy` when targeting a remote database (Supabase, production). It applies the committed SQL files in `prisma/migrations/` without generating new ones.
 
 ### 4. Start development server
 
@@ -66,8 +68,38 @@ The site is available at [http://localhost:3000](http://localhost:3000). It redi
 | `npm run build` | Production build + type check |
 | `npm run lint` | ESLint |
 | `npx prisma studio` | Browse the database in a GUI |
-| `npx prisma migrate dev` | Apply schema changes |
+| `npx prisma migrate deploy` | Apply pending migrations to the database |
 | `npx prisma generate` | Regenerate client after schema edits |
+
+---
+
+## Database migrations
+
+The schema lives in `prisma/schema.prisma` and is shared by both the frontend and the scraper. Migration SQL files are committed to git under `prisma/migrations/`.
+
+### Applying existing migrations (first-time setup or new environment)
+
+```bash
+npx prisma migrate deploy
+npx prisma generate
+```
+
+### Making a schema change
+
+1. Edit `prisma/schema.prisma`
+2. Generate and apply a new migration:
+   ```bash
+   npx prisma migrate dev --name describe_your_change
+   ```
+3. Regenerate the TypeScript client:
+   ```bash
+   npx prisma generate
+   ```
+4. Commit both the updated `schema.prisma` and the new file in `prisma/migrations/`
+
+> **`migrate dev` vs `migrate deploy`** — `migrate dev` diffs your schema, generates a new SQL migration file, and applies it immediately. Use it locally. `migrate deploy` only applies already-committed migration files without generating anything — use it for Supabase and production deployments.
+
+> **Supabase note** — use the **Session mode pooler** connection string (port 5432 on `aws-0-*.pooler.supabase.com`), not the direct `db.*.supabase.co` host. New Supabase projects are IPv6-only on the direct connection, which most home networks cannot reach.
 
 ---
 

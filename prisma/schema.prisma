@@ -1,0 +1,116 @@
+// This is your Prisma schema file.
+// Shared between the frontend (read) and the scraper (write).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum CompetitionType {
+  TOURNAMENT
+  CHAMPIONSHIP
+  KATA
+  CAMP
+  OPEN
+  INTERNATIONAL
+}
+
+enum CompetitionStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum MatchRound {
+  POOL
+  ROUND_OF_32
+  ROUND_OF_16
+  QUARTER_FINAL
+  SEMI_FINAL
+  BRONZE
+  FINAL
+}
+
+// ---------------------------------------------------------------------------
+// Models
+// ---------------------------------------------------------------------------
+
+model Competition {
+  id                   String            @id @default(cuid())
+  sourceId             String?           @unique // judokisa.fi ID for dedup
+  name                 String
+  slug                 String            @unique
+  type                 CompetitionType
+  status               CompetitionStatus @default(UPCOMING)
+  dateStart            DateTime
+  dateEnd              DateTime
+  registrationDeadline DateTime?
+  city                 String
+  venue                String?
+  country              String            @default("FI")
+  description          String?
+  categories           String[] // e.g. ["U18", "U21", "Senior"]
+  weightCategories     String[] // e.g. ["-60kg", "-66kg", "-73kg"]
+  capacity             Int?
+  registeredCount      Int               @default(0)
+  videoUrl             String?
+  registrationUrl      String?
+  results              Result[]
+  matches              Match[]
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  @@index([status, dateStart])
+  @@index([slug])
+}
+
+model Result {
+  id             String      @id @default(cuid())
+  competition    Competition @relation(fields: [competitionId], references: [id])
+  competitionId  String
+  athleteName    String
+  club           String?
+  weightCategory String
+  ageCategory    String?
+  gender         Gender
+  placement      Int // 1, 2, 3, 5, 7...
+  createdAt      DateTime    @default(now())
+
+  @@index([competitionId])
+  @@index([athleteName])
+}
+
+model Match {
+  id             String      @id @default(cuid())
+  competition    Competition @relation(fields: [competitionId], references: [id])
+  competitionId  String
+  athlete1Name   String
+  athlete2Name   String
+  athlete1Club   String?
+  athlete2Club   String?
+  athlete1Score  Int?
+  athlete2Score  Int?
+  winnerName     String?
+  weightCategory String
+  ageCategory    String?
+  gender         Gender
+  round          MatchRound?
+  createdAt      DateTime    @default(now())
+
+  @@index([competitionId])
+  @@index([athlete1Name])
+  @@index([athlete2Name])
+}

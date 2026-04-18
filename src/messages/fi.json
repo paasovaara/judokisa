@@ -1,0 +1,96 @@
+{
+  "nav": {
+    "competitions": "Kilpailut",
+    "history": "Historia",
+    "language": "Kieli"
+  },
+  "home": {
+    "hero_title": "Suomen Judo",
+    "hero_subtitle": "Kilpailut, tulokset ja videolähetykset",
+    "upcoming_title": "Tulevat kilpailut",
+    "results_title": "Viimeisimmät tulokset",
+    "view_all": "Näytä kaikki",
+    "search_placeholder": "Hae kilpailija..."
+  },
+  "competitions": {
+    "title": "Kilpailut",
+    "upcoming": "Tulevat",
+    "past": "Menneet",
+    "search_placeholder": "Hae nimellä tai kaupungilla...",
+    "filter_type": "Tyyppi",
+    "all_types": "Kaikki tyypit",
+    "sort_date": "Päivämäärä",
+    "sort_name": "Nimi",
+    "no_results": "Kilpailuja ei löydy.",
+    "registration_deadline": "Ilmoittautuminen päättyy",
+    "capacity": "Osallistujia",
+    "register": "Ilmoittaudu",
+    "full": "Täynnä",
+    "closed": "Suljettu"
+  },
+  "competition": {
+    "info": "Tiedot",
+    "results": "Tulokset",
+    "video": "Video",
+    "location": "Paikka",
+    "date": "Päivämäärä",
+    "type": "Tyyppi",
+    "categories": "Sarjat",
+    "no_results": "Tuloksia ei vielä saatavilla.",
+    "placement": "Sija",
+    "athlete": "Urheilija",
+    "club": "Seura",
+    "watch_stream": "Katso lähetys"
+  },
+  "history": {
+    "title": "Kilpailuhistoria",
+    "description": "Hae kilpailijan tuloshistoria tai kahden kilpailijan keskinäiset kohtaamiset.",
+    "athlete1_placeholder": "Kilpailija 1 (etu- ja sukunimi)",
+    "athlete2_placeholder": "Kilpailija 2 (valinnainen, keskinäiset kohtaamiset)",
+    "search": "Hae",
+    "no_results": "Ei tuloksia hakusanalla",
+    "competition": "Kilpailu",
+    "date": "Päivämäärä",
+    "city": "Kaupunki",
+    "category": "Sarja",
+    "placement": "Sija",
+    "vs": "vastaan",
+    "score": "Tulos",
+    "winner": "Voittaja",
+    "round": "Kierros",
+    "placements_tab": "Sijoitukset",
+    "matches_tab": "Ottelut"
+  },
+  "types": {
+    "TOURNAMENT": "Turnaus",
+    "CHAMPIONSHIP": "Mestaruuskilpailu",
+    "KATA": "Kata",
+    "CAMP": "Leiri",
+    "OPEN": "Open",
+    "INTERNATIONAL": "Kansainvälinen"
+  },
+  "status": {
+    "UPCOMING": "Tuleva",
+    "ONGOING": "Käynnissä",
+    "COMPLETED": "Päättynyt",
+    "CANCELLED": "Peruttu"
+  },
+  "rounds": {
+    "POOL": "Alkusarja",
+    "ROUND_OF_32": "32:n joukko",
+    "ROUND_OF_16": "16:n joukko",
+    "QUARTER_FINAL": "Neljännesvälierä",
+    "SEMI_FINAL": "Välierä",
+    "BRONZE": "Pronssiottelu",
+    "FINAL": "Finaali"
+  },
+  "footer": {
+    "copyright": "Suomen Judoliitto",
+    "data_source": "Tiedot: judokisa.fi"
+  },
+  "common": {
+    "loading": "Ladataan...",
+    "error": "Virhe ladattaessa tietoja.",
+    "back": "Takaisin"
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "nav": {
+    "competitions": "Competitions",
+    "history": "History",
+    "language": "Language"
+  },
+  "home": {
+    "hero_title": "Finnish Judo",
+    "hero_subtitle": "Competitions, results and video streams",
+    "upcoming_title": "Upcoming competitions",
+    "results_title": "Latest results",
+    "view_all": "View all",
+    "search_placeholder": "Search competitor..."
+  },
+  "competitions": {
+    "title": "Competitions",
+    "upcoming": "Upcoming",
+    "past": "Past",
+    "search_placeholder": "Search by name or city...",
+    "filter_type": "Type",
+    "all_types": "All types",
+    "sort_date": "Date",
+    "sort_name": "Name",
+    "no_results": "No competitions found.",
+    "registration_deadline": "Registration deadline",
+    "capacity": "Participants",
+    "register": "Register",
+    "full": "Full",
+    "closed": "Closed"
+  },
+  "competition": {
+    "info": "Info",
+    "results": "Results",
+    "video": "Video",
+    "location": "Location",
+    "date": "Date",
+    "type": "Type",
+    "categories": "Categories",
+    "no_results": "Results not yet available.",
+    "placement": "Placement",
+    "athlete": "Athlete",
+    "club": "Club",
+    "watch_stream": "Watch stream"
+  },
+  "history": {
+    "title": "Competitor history",
+    "description": "Look up a competitor's result history or head-to-head record between two competitors.",
+    "athlete1_placeholder": "Competitor 1 (first and last name)",
+    "athlete2_placeholder": "Competitor 2 (optional, for head-to-head)",
+    "search": "Search",
+    "no_results": "No results found for",
+    "competition": "Competition",
+    "date": "Date",
+    "city": "City",
+    "category": "Category",
+    "placement": "Placement",
+    "vs": "vs",
+    "score": "Score",
+    "winner": "Winner",
+    "round": "Round",
+    "placements_tab": "Placements",
+    "matches_tab": "Matches"
+  },
+  "types": {
+    "TOURNAMENT": "Tournament",
+    "CHAMPIONSHIP": "Championship",
+    "KATA": "Kata",
+    "CAMP": "Camp",
+    "OPEN": "Open",
+    "INTERNATIONAL": "International"
+  },
+  "status": {
+    "UPCOMING": "Upcoming",
+    "ONGOING": "Ongoing",
+    "COMPLETED": "Completed",
+    "CANCELLED": "Cancelled"
+  },
+  "rounds": {
+    "POOL": "Pool",
+    "ROUND_OF_32": "Round of 32",
+    "ROUND_OF_16": "Round of 16",
+    "QUARTER_FINAL": "Quarter-final",
+    "SEMI_FINAL": "Semi-final",
+    "BRONZE": "Bronze match",
+    "FINAL": "Final"
+  },
+  "footer": {
+    "copyright": "Finnish Judo Federation",
+    "data_source": "Data: judokisa.fi"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error loading data.",
+    "back": "Back"
+  }
+}

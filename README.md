@@ -1,6 +1,6 @@
 # JudoKisa
 
-Mobile-first web platform for Finnish judo competitions — results, video feeds, and competitor history. Replaces [judokisa.fi](https://judokisa.fi).
+Mobile-first web platform for Finnish judo competitions — results, video feeds, and competitor history.
 
 See [`spec.md`](./spec.md) for the full application specification.
 

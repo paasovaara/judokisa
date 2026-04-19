@@ -1,30 +1,22 @@
-import { getTranslations } from "next-intl/server";
-import { notFound } from "next/navigation";
-import { prisma } from "@/lib/db";
+"use client";
 
-export default async function CompetitionMatchesPage({
+import { useTranslations } from "next-intl";
+import { use } from "react";
+import { useCompetitionTabs } from "@/components/CompetitionTabsProvider";
+
+export default function CompetitionMatchesPage({
   params,
 }: {
-  params: Promise<{ locale: string; slug: string }>;
+  params: Promise<{ locale: string }>;
 }) {
-  const { locale, slug } = await params;
+  const { locale } = use(params);
+  const { data } = useCompetitionTabs();
+  const t = useTranslations("competition");
+  const tRounds = useTranslations("rounds");
 
-  let data;
-  try {
-    data = await prisma.competition.findUnique({
-      where: { slug },
-      select: {
-        matches: { orderBy: [{ weightCategory: "asc" }, { round: "asc" }] },
-      },
-    });
-  } catch {
-    data = null;
+  if (!data) {
+    return <div className="h-48 animate-pulse rounded-xl bg-gray-100" />;
   }
-
-  if (!data) notFound();
-
-  const t = await getTranslations({ locale, namespace: "competition" });
-  const tRounds = await getTranslations({ locale, namespace: "rounds" });
 
   if (data.matches.length === 0) {
     return <p className="text-sm text-gray-500">{t("no_matches")}</p>;
@@ -46,7 +38,7 @@ export default async function CompetitionMatchesPage({
             <tr key={m.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
               <td className="py-2.5 pl-4 pr-3 text-xs text-gray-500">{m.weightCategory}</td>
               <td className="py-2.5 pr-3 text-xs text-gray-500">
-                {m.round ? tRounds(m.round) : "–"}
+                {m.round ? tRounds(m.round as Parameters<typeof tRounds>[0]) : "–"}
               </td>
               <td className="py-2.5 pr-3">
                 <span className={m.winnerName === m.athlete1Name ? "font-semibold text-gray-900" : "text-gray-600"}>

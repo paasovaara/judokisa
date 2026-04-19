@@ -1,30 +1,21 @@
-import { getTranslations } from "next-intl/server";
-import { notFound } from "next/navigation";
-import { prisma } from "@/lib/db";
+"use client";
 
-export default async function CompetitionLivestreamsPage({
+import { useTranslations } from "next-intl";
+import { use } from "react";
+import { useCompetitionTabs } from "@/components/CompetitionTabsProvider";
+
+export default function CompetitionLivestreamsPage({
   params,
 }: {
   params: Promise<{ locale: string; slug: string }>;
 }) {
-  const { locale, slug } = await params;
+  const { slug } = use(params);
+  const { data } = useCompetitionTabs();
+  const t = useTranslations("competition");
 
-  let data;
-  try {
-    data = await prisma.competition.findUnique({
-      where: { slug },
-      select: {
-        name: true,
-        videoFeeds: { orderBy: { name: "asc" } },
-      },
-    });
-  } catch {
-    data = null;
+  if (!data) {
+    return <div className="h-48 animate-pulse rounded-xl bg-gray-100" />;
   }
-
-  if (!data) notFound();
-
-  const t = await getTranslations({ locale, namespace: "competition" });
 
   if (data.videoFeeds.length === 0) {
     return <p className="text-sm text-gray-500">{t("no_feeds")}</p>;
@@ -37,7 +28,10 @@ export default async function CompetitionLivestreamsPage({
           feed.url.includes("youtube.com") || feed.url.includes("youtu.be");
 
         return (
-          <div key={feed.id} className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div
+            key={feed.id}
+            className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
+          >
             <div className="border-b border-gray-100 bg-gray-50 px-4 py-2.5">
               <span className="text-sm font-semibold text-primary">{feed.name}</span>
             </div>
@@ -48,7 +42,7 @@ export default async function CompetitionLivestreamsPage({
                   className="h-full w-full"
                   allowFullScreen
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  title={`${data.name} — ${feed.name}`}
+                  title={`${slug} — ${feed.name}`}
                 />
               </div>
             ) : (

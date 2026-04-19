@@ -1,6 +1,6 @@
 # Judo Competition Platform — Application Specification
 
-**Version:** 0.2.0
+**Version:** 0.3.0
 **Status:** Draft
 **Last updated:** 2026-04-18
 
@@ -106,29 +106,30 @@ Future roles (not in v1):
 
 ```prisma
 model Competition {
-  id                  String    @id @default(cuid())
-  sourceId            String?   @unique  // judokisa.fi ID for dedup
-  name                String
-  slug                String    @unique
-  type                CompetitionType
-  status              CompetitionStatus
-  dateStart           DateTime
-  dateEnd             DateTime
+  id                   String            @id @default(cuid())
+  sourceId             String?           @unique  // judokisa.fi ID for dedup
+  name                 String
+  slug                 String            @unique
+  type                 CompetitionType
+  status               CompetitionStatus
+  dateStart            DateTime
+  dateEnd              DateTime
   registrationDeadline DateTime?
-  city                String
-  venue               String?
-  country             String    @default("FI")
-  description         String?
-  categories          String[]  // e.g. ["U18", "U21", "Senior"]
-  weightCategories    String[]  // e.g. ["-60kg", "-66kg", "-73kg"]
-  capacity            Int?
-  registeredCount     Int       @default(0)
-  videoUrl            String?
-  registrationUrl     String?   // external link
-  results             Result[]
-  matches             Match[]
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  city                 String
+  venue                String?
+  country              String            @default("FI")
+  description          String?
+  categories           String[]          // e.g. ["U18", "U21", "Senior"]
+  weightCategories     String[]          // e.g. ["-60kg", "-66kg", "-73kg"]
+  capacity             Int?
+  registeredCount      Int               @default(0)
+  registrationUrl      String?           // external link
+  results              Result[]
+  matches              Match[]
+  competitors          Competitor[]
+  videoFeeds           VideoFeed[]
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
 }
 
 enum CompetitionType {
@@ -202,6 +203,41 @@ enum MatchRound {
 }
 ```
 
+### 5.4 Competitor
+
+Stores registered athletes scraped from `/continfo/showcontest2/{id}/` on judokisa.fi. Populated for all competition statuses (upcoming, ongoing, completed).
+
+```prisma
+model Competitor {
+  id             String      @id @default(cuid())
+  competition    Competition @relation(fields: [competitionId], references: [id])
+  competitionId  String
+  name           String
+  country        String?     // ISO 3166-1 alpha-3, e.g. "FIN"
+  club           String?
+  beltRank       String?     // e.g. "4.kyu", "1.dan"
+  gender         Gender
+  birthYear      Int?
+  weightCategory String      // normalised, e.g. "-46kg", "+100kg"
+  ageCategory    String?     // e.g. "U15"
+  createdAt      DateTime    @default(now())
+}
+```
+
+### 5.5 VideoFeed
+
+Stores one row per camera/tatami stream. Scraped from the `tatamis` JavaScript array at `/continfo/video/{id}/`. Replaces the former single `videoUrl` string on `Competition`.
+
+```prisma
+model VideoFeed {
+  id            String      @id @default(cuid())
+  competition   Competition @relation(fields: [competitionId], references: [id])
+  competitionId String
+  name          String      // "Tatami 1", "Tatami 2" …
+  url           String
+}
+```
+
 ---
 
 ## 6. Pages & Routes
@@ -213,10 +249,11 @@ enum MatchRound {
 | `/` | Home | Hero, next competitions, latest results |
 | `/competitions` | Competition list | Upcoming + past, filterable |
 | `/competitions/[slug]` | Competition detail — Information | Categories, weight classes, description |
-| `/competitions/[slug]/athletes` | Competition detail — Athletes | Athlete list by category |
+| `/competitions/[slug]/athletes` | Competition detail — Athletes | Sortable competitor table |
 | `/competitions/[slug]/matches` | Competition detail — Matches | Match table |
 | `/competitions/[slug]/results` | Competition detail — Results | Results by weight/age category |
-| `/competitions/[slug]/livestreams` | Competition detail — Livestreams | Video embed or link |
+| `/competitions/[slug]/livestreams` | Competition detail — Livestreams | Per-tatami video feeds |
+| `/api/competitions/[slug]/tabs` | Tab data API | JSON endpoint — all tab data for a competition |
 | `/history` | Competitor history | Search by athlete name |
 
 ### 6.2 Home (`/`)
@@ -241,7 +278,9 @@ All sub-pages share a **common layout** with:
 - Competition header: name, type/status badges, date, city/venue
 - Details strip: date, location, registration deadline, capacity bar
 - Register CTA button (links to external `registrationUrl`) when UPCOMING and not full
-- **Sub-navigation tab bar** (horizontally scrollable on mobile)
+- **Sub-navigation tab bar** (pill-style, horizontally scrollable on mobile, emoji icons per tab)
+
+Tab data is fetched once via `/api/competitions/[slug]/tabs` on layout mount, stored in a module-level client cache, and shared across all tabs. Switching tabs is instant (no re-fetch). Background revalidation runs every 60 seconds; tabs only re-render if the response payload changed.
 
 #### Tab: Information (`/competitions/[slug]`)
 - Age/division categories as pill tags
@@ -249,9 +288,12 @@ All sub-pages share a **common layout** with:
 - Description / additional information (free text from organiser)
 
 #### Tab: Athletes (`/competitions/[slug]/athletes`)
-- **Completed competitions**: athlete list grouped by weight/age category, derived from result data
-- **Upcoming/ongoing**: registration count stat + placeholder message
-- Future: dedicated `Registrant` model in DB once scraper supports it
+- **Sortable table**: columns Name · Club · Category · Country · Belt · Born
+- Clicking a column header sorts ascending; clicking again reverses
+- Country column: ISO alpha-3 code with flag emoji (rendered client-side, not stored)
+- Belt column: coloured circle emoji matching kyu/dan grade (rendered client-side, not stored)
+- For completed competitions with no `Competitor` rows: falls back to athletes derived from `Result` data (name + club + category only)
+- For upcoming/ongoing with no competitor data: shows `registeredCount` stat + placeholder
 
 #### Tab: Matches (`/competitions/[slug]/matches`)
 - Table: category, round, athlete 1 vs athlete 2, score
@@ -265,9 +307,10 @@ All sub-pages share a **common layout** with:
 - Empty state before competition is completed
 
 #### Tab: Livestreams (`/competitions/[slug]/livestreams`)
-- YouTube URL → embedded `<iframe>` player (aspect-video)
-- Other URL → styled "Watch stream" button
-- Empty state when no `videoUrl` set
+- Responsive grid of tatami feed cards (1 col mobile, 2–3 col desktop)
+- Each card: feed name ("Tatami 1") + embedded `<iframe>` for YouTube URLs
+- Non-YouTube URL → styled link button instead of iframe
+- Empty state when no feeds available
 
 ### 6.5 Competitor History (`/history`)
 
@@ -283,27 +326,37 @@ All sub-pages share a **common layout** with:
 
 ### 7.1 Performance
 - Core Web Vitals target: LCP < 2.5s, CLS < 0.1, INP < 200ms
-- Competition detail and sub-pages statically generated (`generateStaticParams`)
+- Competition detail layout and information tab statically generated (`generateStaticParams`)
+- Tab content (athletes, matches, results, livestreams) rendered client-side from cached API response — instant tab switching after first load
 - History search server-rendered on demand
 
-### 7.2 Responsive / Mobile
+### 7.2 Client-Side Caching (Competition Tabs)
+
+- All tab data fetched in a single request to `/api/competitions/[slug]/tabs` when the competition layout mounts
+- Cache stored in a module-level `Map` — survives component remounts within the same browser session
+- Stale threshold: 60 seconds
+- Background refresh: refetch every 60 seconds while the page is open
+- Change detection: raw JSON string comparison — tab re-renders only if payload differs from previous fetch
+- Switching between tabs uses cached data synchronously (no loading flash after initial fetch)
+
+### 7.3 Responsive / Mobile
 - Breakpoints: `sm` 640px, `md` 768px, `lg` 1024px, `xl` 1280px (Tailwind defaults)
 - All tables scroll horizontally on mobile
 - Sub-navigation tab bar scrolls horizontally on mobile (all tabs always reachable)
 - Global nav: hamburger menu on mobile, full nav on `md+`
 
-### 7.3 Internationalisation
+### 7.4 Internationalisation
 - Default language: Finnish (`fi`)
 - Secondary language: English (`en`)
 - Implementation: `next-intl` with route-based locale prefix (`/fi/`, `/en/`)
 - All UI strings in translation files; data (athlete names, city names) stored as-is
 
-### 7.4 SEO
+### 7.5 SEO
 - Competition pages have structured metadata (title, description, OG tags)
 - `sitemap.xml` generated from all competition slugs
 - `robots.txt` allowing full indexing
 
-### 7.5 Accessibility
+### 7.6 Accessibility
 - WCAG 2.1 AA target
 - All interactive elements keyboard navigable
 - Sufficient colour contrast on primary/white combinations
@@ -314,7 +367,6 @@ All sub-pages share a **common layout** with:
 
 - **Authentication** — NextAuth.js with email + social login
 - **Registration flow** — athletes register for competitions within the platform
-- **Registrant model** — store individual registered athletes per competition (requires scraper update)
 - **CMS** — replaces scraper; organizers manage competitions via an admin UI
 - **Competitor profiles** — personal stats, history, club affiliation
 - **Rankings** — national rankings by age/weight category
@@ -329,18 +381,20 @@ All sub-pages share a **common layout** with:
 /
 ├── src/
 │   ├── app/
+│   │   ├── api/
+│   │   │   └── competitions/[slug]/tabs/route.ts  # Tab data API endpoint
 │   │   └── [locale]/
 │   │       ├── page.tsx                        # Home
 │   │       ├── competitions/
 │   │       │   ├── page.tsx                    # Competition list
 │   │       │   ├── CompetitionFilters.tsx
 │   │       │   └── [slug]/
-│   │       │       ├── layout.tsx              # Shared header + sub-nav
-│   │       │       ├── page.tsx                # Information tab
-│   │       │       ├── athletes/page.tsx
-│   │       │       ├── matches/page.tsx
-│   │       │       ├── results/page.tsx
-│   │       │       └── livestreams/page.tsx
+│   │       │       ├── layout.tsx              # Shared header + sub-nav + cache provider
+│   │       │       ├── page.tsx                # Information tab (server component)
+│   │       │       ├── athletes/page.tsx       # Client component — reads from cache
+│   │       │       ├── matches/page.tsx        # Client component — reads from cache
+│   │       │       ├── results/page.tsx        # Client component — reads from cache
+│   │       │       └── livestreams/page.tsx    # Client component — reads from cache
 │   │       └── history/
 │   │           ├── page.tsx
 │   │           └── HistorySearch.tsx
@@ -349,12 +403,15 @@ All sub-pages share a **common layout** with:
 │   │   ├── Footer.tsx
 │   │   ├── CompetitionCard.tsx
 │   │   ├── CompetitionSubNav.tsx               # Tab bar (client component)
+│   │   ├── CompetitionTabsProvider.tsx         # Cache context + background refresh
+│   │   ├── CompetitorTable.tsx                 # Sortable competitor table (client component)
 │   │   ├── Badge.tsx
 │   │   ├── CapacityBar.tsx
 │   │   ├── ResultsTable.tsx
 │   │   └── SearchInput.tsx
 │   ├── lib/
-│   │   └── db.ts                               # Prisma singleton (pg adapter)
+│   │   ├── db.ts                               # Prisma singleton (pg adapter)
+│   │   └── competitionTabCache.ts              # Module-level cache + fetch logic
 │   ├── i18n/
 │   │   ├── routing.ts
 │   │   └── request.ts

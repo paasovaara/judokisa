@@ -1,53 +1,23 @@
-import { getTranslations } from "next-intl/server";
-import { notFound } from "next/navigation";
-import { prisma } from "@/lib/db";
-import CompetitorTable from "@/components/CompetitorTable";
+"use client";
 
-export default async function CompetitionAthletesPage({
+import { useTranslations } from "next-intl";
+import { use } from "react";
+import { useCompetitionTabs } from "@/components/CompetitionTabsProvider";
+import CompetitorTable from "@/components/CompetitorTable";
+import type { ResultItem } from "@/lib/competitionTabCache";
+
+export default function CompetitionAthletesPage({
   params,
 }: {
-  params: Promise<{ locale: string; slug: string }>;
+  params: Promise<{ locale: string }>;
 }) {
-  const { locale, slug } = await params;
+  const { locale } = use(params);
+  const { data } = useCompetitionTabs();
+  const t = useTranslations("competition");
 
-  let data;
-  try {
-    data = await prisma.competition.findUnique({
-      where: { slug },
-      select: {
-        status: true,
-        registeredCount: true,
-        capacity: true,
-        competitors: {
-          select: {
-            id: true,
-            name: true,
-            club: true,
-            country: true,
-            beltRank: true,
-            birthYear: true,
-            weightCategory: true,
-            ageCategory: true,
-          },
-        },
-        results: {
-          select: {
-            athleteName: true,
-            club: true,
-            weightCategory: true,
-            ageCategory: true,
-          },
-          orderBy: [{ weightCategory: "asc" }, { athleteName: "asc" }],
-        },
-      },
-    });
-  } catch {
-    data = null;
+  if (!data) {
+    return <div className="h-48 animate-pulse rounded-xl bg-gray-100" />;
   }
-
-  if (!data) notFound();
-
-  const t = await getTranslations({ locale, namespace: "competition" });
 
   if (data.competitors.length > 0) {
     return (
@@ -60,9 +30,9 @@ export default async function CompetitionAthletesPage({
     );
   }
 
-  // Completed competition with no competitor records — derive from results
+  // Completed with no competitor records — derive from results
   if (data.status === "COMPLETED" && data.results.length > 0) {
-    const competitors = data.results.map((r, i) => ({
+    const competitors = data.results.map((r: ResultItem, i: number) => ({
       id: String(i),
       name: r.athleteName,
       club: r.club,

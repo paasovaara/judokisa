@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import Badge from "@/components/Badge";
 import CapacityBar from "@/components/CapacityBar";
 import CompetitionSubNav from "@/components/CompetitionSubNav";
+import { CompetitionTabsProvider } from "@/components/CompetitionTabsProvider";
 
 export async function generateStaticParams() {
   try {
@@ -178,9 +179,11 @@ export default async function CompetitionLayout({
       />
 
       {/* Tab content */}
-      <div className="mx-auto max-w-4xl px-4 py-8">
-        {children}
-      </div>
+      <CompetitionTabsProvider slug={slug}>
+        <div className="mx-auto max-w-4xl px-4 py-8">
+          {children}
+        </div>
+      </CompetitionTabsProvider>
     </div>
   );
 }

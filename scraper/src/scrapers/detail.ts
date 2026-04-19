@@ -97,7 +97,9 @@ export async function scrapeVideoFeeds(sourceId: string): Promise<VideoFeedRow[]
 
   let urls: string[];
   try {
-    urls = JSON.parse(match[1]) as string[];
+    // Strip trailing commas (valid JS but not valid JSON)
+    const normalized = match[1].replace(/,(\s*[\]}])/g, "$1");
+    urls = JSON.parse(normalized) as string[];
   } catch {
     return [];
   }

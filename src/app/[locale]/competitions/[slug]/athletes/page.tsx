@@ -41,6 +41,7 @@ export default function CompetitionAthletesPage({
       birthYear: null,
       weightCategory: r.weightCategory,
       ageCategory: r.ageCategory,
+      gender: r.gender,
     }));
 
     return (

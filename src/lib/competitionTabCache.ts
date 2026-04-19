@@ -7,6 +7,7 @@ export interface CompetitorItem {
   birthYear: number | null;
   weightCategory: string;
   ageCategory: string | null;
+  gender: string;
 }
 
 export interface ResultItem {

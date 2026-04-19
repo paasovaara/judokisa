@@ -11,9 +11,17 @@ export interface CompetitorRow {
   birthYear: number | null;
   weightCategory: string;
   ageCategory: string | null;
+  gender: string;
 }
 
-type SortKey = "name" | "club" | "category" | "country" | "beltRank" | "birthYear";
+type SortKey = "name" | "club" | "category" | "country" | "beltRank" | "birthYear" | "gender";
+
+/**
+ * Default sort priority used both for the initial render and as tie-breakers
+ * when sorting by a specific column. "gender" is excluded from the header list
+ * (no visible column) but still participates as the final tie-breaker.
+ */
+const SORT_PRIORITY: SortKey[] = ["name", "category", "club", "beltRank", "birthYear", "gender"];
 
 interface Props {
   competitors: CompetitorRow[];
@@ -72,8 +80,26 @@ function getVal(c: CompetitorRow, key: SortKey): string | number {
   return c[key] ?? "";
 }
 
+function multiSort(a: CompetitorRow, b: CompetitorRow, primary: SortKey, asc: boolean): number {
+  // Primary key with user-selected direction
+  const av = getVal(a, primary);
+  const bv = getVal(b, primary);
+  const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+  if (cmp !== 0) return asc ? cmp : -cmp;
+
+  // Tie-breakers: remaining keys in priority order, always ascending
+  for (const key of SORT_PRIORITY) {
+    if (key === primary) continue;
+    const av2 = getVal(a, key);
+    const bv2 = getVal(b, key);
+    const cmp2 = av2 < bv2 ? -1 : av2 > bv2 ? 1 : 0;
+    if (cmp2 !== 0) return cmp2;
+  }
+  return 0;
+}
+
 export default function CompetitorTable({ competitors, locale }: Props) {
-  const [sortKey, setSortKey] = useState<SortKey>("category");
+  const [sortKey, setSortKey] = useState<SortKey>("name");
   const [asc, setAsc] = useState(true);
 
   function handleSort(key: SortKey) {
@@ -85,12 +111,7 @@ export default function CompetitorTable({ competitors, locale }: Props) {
     }
   }
 
-  const sorted = [...competitors].sort((a, b) => {
-    const av = getVal(a, sortKey);
-    const bv = getVal(b, sortKey);
-    const cmp = av < bv ? -1 : av > bv ? 1 : 0;
-    return asc ? cmp : -cmp;
-  });
+  const sorted = [...competitors].sort((a, b) => multiSort(a, b, sortKey, asc));
 
   return (
     <div className="overflow-x-auto rounded-xl border border-gray-200">

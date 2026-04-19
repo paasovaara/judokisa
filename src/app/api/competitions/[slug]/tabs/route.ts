@@ -26,6 +26,7 @@ export async function GET(
             birthYear: true,
             weightCategory: true,
             ageCategory: true,
+            gender: true,
           },
         },
         results: {

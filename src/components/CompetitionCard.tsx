@@ -44,7 +44,7 @@ export default function CompetitionCard({
       ? fmt.format(dateStart)
       : `${fmt.format(dateStart)} – ${fmt.format(dateEnd)}`;
 
-  const isFull = capacity != null && registeredCount >= capacity;
+  const isFull = capacity != null && capacity > 0 && registeredCount > 0 && registeredCount >= capacity;
   const deadlineSoon =
     registrationDeadline != null &&
     status === "UPCOMING" &&

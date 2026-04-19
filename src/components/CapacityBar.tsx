@@ -5,7 +5,9 @@ interface CapacityBarProps {
 }
 
 export default function CapacityBar({ registered, capacity, label }: CapacityBarProps) {
-  const pct = Math.min(100, Math.round((registered / capacity) * 100));
+  const pct = registered > 0 && capacity > 0
+    ? Math.min(100, Math.round((registered / capacity) * 100))
+    : 0;
   const isFull = pct >= 100;
   const isNearFull = pct >= 80;
 

@@ -88,7 +88,10 @@ export default async function CompetitionLayout({
       : `${fmt.format(competition.dateStart)} – ${fmt.format(competition.dateEnd)}`;
 
   const isFull =
-    competition.capacity != null && competition.registeredCount >= competition.capacity;
+    competition.capacity != null &&
+    competition.capacity > 0 &&
+    competition.registeredCount > 0 &&
+    competition.registeredCount >= competition.capacity;
 
   return (
     <div>

@@ -101,5 +101,21 @@
     "loading": "Loading...",
     "error": "Error loading data.",
     "back": "Back"
+  },
+  "athlete": {
+    "back": "Competitions",
+    "total_competitions": "Competitions",
+    "best_placement": "Best placement",
+    "weight_classes": "Weight classes",
+    "win_loss_title": "Win / Loss",
+    "ippon": "Ippon",
+    "wins": "Wins",
+    "losses": "Losses",
+    "history_title": "Competition history",
+    "date": "Date",
+    "competition": "Competition",
+    "placement": "Placement",
+    "category": "Category",
+    "not_found": "Athlete not found"
   }
 }

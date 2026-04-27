@@ -235,7 +235,14 @@ export default function CompetitorTable({ competitors, locale }: Props) {
             ) : (
               sorted.map((c) => (
                 <tr key={c.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
-                  <td className="py-2.5 pl-4 pr-6 font-medium text-gray-900">{c.name}</td>
+                  <td className="py-2.5 pl-4 pr-6 font-medium">
+                    <a
+                      href={`/${locale}/athletes/${c.id}`}
+                      className="text-primary-light hover:underline"
+                    >
+                      {c.name}
+                    </a>
+                  </td>
                   <td className="py-2.5 pr-6 text-gray-600">{c.club ?? "–"}</td>
                   <td className="py-2.5 pr-6 text-gray-600">
                     {`${c.ageCategory ?? ""} ${c.weightCategory}`.trim()}

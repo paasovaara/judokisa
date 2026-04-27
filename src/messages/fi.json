@@ -101,5 +101,21 @@
     "loading": "Ladataan...",
     "error": "Virhe ladattaessa tietoja.",
     "back": "Takaisin"
+  },
+  "athlete": {
+    "back": "Kilpailut",
+    "total_competitions": "Kilpailut",
+    "best_placement": "Paras sijoitus",
+    "weight_classes": "Painoluokat",
+    "win_loss_title": "Voitot / Häviöt",
+    "ippon": "Ippon",
+    "wins": "Voittoa",
+    "losses": "Tappiota",
+    "history_title": "Kilpailuhistoria",
+    "date": "Päivämäärä",
+    "competition": "Kilpailu",
+    "placement": "Sija",
+    "category": "Sarja",
+    "not_found": "Urheilijaa ei löydy"
   }
 }

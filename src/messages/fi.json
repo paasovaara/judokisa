@@ -2,6 +2,7 @@
   "nav": {
     "competitions": "Kilpailut",
     "history": "Historia",
+    "admin": "Hallinta",
     "language": "Kieli"
   },
   "home": {
@@ -66,7 +67,6 @@
     "vs": "vastaan",
     "score": "Tulos",
     "winner": "Voittaja",
-    "round": "Kierros",
     "placements_tab": "Sijoitukset",
     "matches_tab": "Ottelut"
   },
@@ -84,14 +84,99 @@
     "COMPLETED": "Päättynyt",
     "CANCELLED": "Peruttu"
   },
-  "rounds": {
-    "POOL": "Alkusarja",
-    "ROUND_OF_32": "32:n joukko",
-    "ROUND_OF_16": "16:n joukko",
-    "QUARTER_FINAL": "Neljännesvälierä",
-    "SEMI_FINAL": "Välierä",
-    "BRONZE": "Pronssiottelu",
-    "FINAL": "Finaali"
+  "admin": {
+    "title": "Hallinta",
+    "subtitle": "Hallinnoi kilpailuja, tuomareita, käyttäjiä ja seuroja.",
+    "subnav": {
+      "competitions": "Kilpailut",
+      "referees": "Tuomarit",
+      "courses": "Kurssit",
+      "users": "Käyttäjät",
+      "clubs": "Seurat",
+      "suomisport": "SuomiSport-synkronointi"
+    },
+    "competitions": {
+      "title": "Kilpailut",
+      "new": "Uusi kilpailu",
+      "edit": "Muokkaa",
+      "delete": "Poista",
+      "save": "Tallenna",
+      "cancel": "Peruuta",
+      "search_placeholder": "Hae nimellä tai kaupungilla…",
+      "no_results": "Ei kilpailuja vielä.",
+      "delete_confirm": "Poistetaanko tämä kilpailu? Kaikki sarjat, kilpailijat, tulokset, ottelut, videolähetykset ja tuomarikutsut poistetaan myös.",
+      "form": {
+        "name": "Nimi",
+        "slug": "Slug",
+        "type": "Tyyppi",
+        "level": "Taso",
+        "status": "Tila",
+        "registration_open": "Ilmoittautuminen avoinna",
+        "date_start": "Alkamispäivä",
+        "date_end": "Päättymispäivä",
+        "registration_deadline": "Ilmoittautuminen päättyy",
+        "city": "Kaupunki",
+        "venue": "Paikka",
+        "address": "Osoite",
+        "country": "Maa",
+        "geographic_area": "Alue",
+        "capacity": "Maksimimäärä",
+        "tatami_count": "Tatamien lukumäärä",
+        "target_referee_count": "Tavoitemäärä tuomareita",
+        "match_duration": "Otteluaika (minuuttia)",
+        "use_custom_video_html": "Käytä omaa video-HTML:ää",
+        "description": "Kuvaus",
+        "registration_url": "Ilmoittautumislinkki",
+        "info_url": "Lisätieto-URL",
+        "results_url": "Tulos-URL"
+      }
+    },
+    "categories": {
+      "title": "Sarjat",
+      "new": "Uusi sarja",
+      "code": "Koodi",
+      "name_en": "Nimi (englanti)",
+      "name_fi": "Nimi (suomi)",
+      "min_age": "Vähimmäisikä",
+      "max_age": "Enimmäisikä",
+      "gender": "Sukupuoli",
+      "weight_classes": "Painoluokat (pilkulla erotettuna, negatiivinen = alle, positiivinen = yli)",
+      "no_categories": "Ei sarjoja vielä.",
+      "seed_defaults": "Lisää oletussarjat"
+    },
+    "competitors": {
+      "title": "Kilpailijat",
+      "new": "Lisää kilpailija",
+      "no_competitors": "Ei vielä kilpailijoita.",
+      "soft_deleted": "Poistettu (pehmeä)"
+    },
+    "video_feeds": {
+      "title": "Videolähetykset",
+      "new": "Lisää lähetys",
+      "no_feeds": "Ei videolähetyksiä vielä."
+    },
+    "referees": {
+      "title": "Tuomarit",
+      "all_users": "Käyttäjät",
+      "new": "Uusi käyttäjä",
+      "no_users": "Ei käyttäjiä vielä.",
+      "invite": "Kutsu",
+      "no_invitations": "Ei tuomarikutsuja vielä.",
+      "status_ASKED": "Kysytty",
+      "status_DECLINED": "Kieltäytynyt",
+      "status_PROMISED": "Lupautunut",
+      "status_AGREED": "Vahvistanut",
+      "status_PRESENT": "Paikalla"
+    },
+    "tabs": {
+      "overview": "Yleiskatsaus",
+      "categories": "Sarjat",
+      "competitors": "Kilpailijat",
+      "results": "Tulokset",
+      "matches": "Ottelut",
+      "video_feeds": "Videolähetykset",
+      "referees": "Tuomarit"
+    }
   },
   "footer": {
     "copyright": "Suomen Judoliitto",

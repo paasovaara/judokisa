@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useCompetitionTabs } from "@/components/CompetitionTabsProvider";
 import ResultsTable from "@/components/ResultsTable";
+import { weightClassLabel } from "@/lib/format";
 import type { ResultItem } from "@/lib/competitionTabCache";
 
 export default function CompetitionResultsPage() {
@@ -19,7 +20,8 @@ export default function CompetitionResultsPage() {
 
   const byCategory = data.results.reduce(
     (acc: Record<string, ResultItem[]>, r: ResultItem) => {
-      const key = `${r.ageCategory ?? ""} ${r.weightCategory}`.trim();
+      const ageLabel = r.ageCategory ?? r.category?.code ?? "";
+      const key = `${ageLabel} ${weightClassLabel(r.weightClass)}`.trim();
       if (!acc[key]) acc[key] = [];
       acc[key].push(r);
       return acc;

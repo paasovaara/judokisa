@@ -3,6 +3,13 @@ import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import WinLossBar from "@/components/WinLossBar";
+import {
+  fullName,
+  countryFlag,
+  judoGradeEmoji,
+  judoGradeLabel,
+  weightClassLabel,
+} from "@/lib/format";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -31,40 +38,6 @@ function deriveWinLoss(name: string, resultCount: number) {
   return { ipponWins, regularWins: wins - ipponWins, losses, total: base };
 }
 
-const ALPHA3_TO_2: Record<string, string> = {
-  FIN: "FI", SWE: "SE", NOR: "NO", DNK: "DK", EST: "EE", LVA: "LV", LTU: "LT",
-  RUS: "RU", BLR: "BY", POL: "PL", DEU: "DE", FRA: "FR", GBR: "GB", NED: "NL",
-  NLD: "NL", BEL: "BE", AUT: "AT", CHE: "CH", ITA: "IT", ESP: "ES", PRT: "PT",
-  HUN: "HU", CZE: "CZ", SVK: "SK", SVN: "SI", HRV: "HR", SRB: "RS", ROU: "RO",
-  BGR: "BG", UKR: "UA", GEO: "GE", AZE: "AZ", ARM: "AM", KAZ: "KZ", MNG: "MN",
-  JPN: "JP", KOR: "KR", CHN: "CN", BRA: "BR", USA: "US", CAN: "CA", AUS: "AU",
-};
-
-function countryFlag(code: string): string {
-  const alpha2 = ALPHA3_TO_2[code.toUpperCase()] ?? (code.length === 2 ? code.toUpperCase() : null);
-  if (!alpha2) return "";
-  return [...alpha2.toUpperCase()]
-    .map((c) => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65))
-    .join("");
-}
-
-const BELT_EMOJI: [RegExp, string][] = [
-  [/6\.?\s*kyu/i, "⚪"],
-  [/5\.?\s*kyu/i, "🟡"],
-  [/4\.?\s*kyu/i, "🟠"],
-  [/3\.?\s*kyu/i, "🟢"],
-  [/2\.?\s*kyu/i, "🔵"],
-  [/1\.?\s*kyu/i, "🟤"],
-  [/\d+\.?\s*dan/i, "⚫"],
-];
-
-function beltEmoji(rank: string): string {
-  for (const [re, emoji] of BELT_EMOJI) {
-    if (re.test(rank)) return emoji;
-  }
-  return "";
-}
-
 function placementMedal(p: number): string {
   if (p === 1) return "🥇";
   if (p === 2) return "🥈";
@@ -89,8 +62,12 @@ export async function generateMetadata({
   params: Promise<{ locale: string; id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const competitor = await prisma.competitor.findUnique({ where: { id }, select: { name: true } });
-  return { title: competitor?.name ?? "Athlete" };
+  const competitor = await prisma.competitor.findUnique({
+    where: { id },
+    select: { firstName: true, lastName: true },
+  });
+  if (!competitor) return { title: "Athlete" };
+  return { title: fullName(competitor.firstName, competitor.lastName) };
 }
 
 // ---------------------------------------------------------------------------
@@ -108,38 +85,50 @@ export default async function AthletePage({
   const anchor = await prisma.competitor.findUnique({ where: { id } });
   if (!anchor) notFound();
 
-  const athleteName = anchor.name;
+  const nameWhere = {
+    firstName: { equals: anchor.firstName, mode: "insensitive" as const },
+    lastName: { equals: anchor.lastName, mode: "insensitive" as const },
+  };
 
   const [allCompetitors, results] = await Promise.all([
     prisma.competitor.findMany({
-      where: { name: { equals: athleteName, mode: "insensitive" } },
+      where: nameWhere,
+      include: { club: { select: { displayName: true } } },
       orderBy: { createdAt: "desc" },
       take: 50,
     }),
     prisma.result.findMany({
-      where: { athleteName: { equals: athleteName, mode: "insensitive" } },
+      where: nameWhere,
       include: {
         competition: {
           select: { name: true, slug: true, dateStart: true, type: true, city: true },
         },
+        club: { select: { displayName: true } },
       },
       orderBy: { competition: { dateStart: "desc" } },
       take: 200,
     }),
   ]);
 
+  const athleteName = fullName(anchor.firstName, anchor.lastName);
+
   const profile = {
     name: athleteName,
-    club: allCompetitors.find((c) => c.club)?.club ?? results[0]?.club ?? null,
+    club:
+      allCompetitors.find((c) => c.club?.displayName)?.club?.displayName ??
+      allCompetitors.find((c) => c.clubName)?.clubName ??
+      results[0]?.club?.displayName ??
+      results[0]?.clubName ??
+      null,
     country: allCompetitors.find((c) => c.country)?.country ?? null,
-    beltRank: allCompetitors.find((c) => c.beltRank)?.beltRank ?? null,
-    birthYear: allCompetitors.find((c) => c.birthYear)?.birthYear ?? null,
+    judoGrade: allCompetitors.find((c) => c.judoGrade)?.judoGrade ?? null,
+    yearOfBirth: allCompetitors.find((c) => c.yearOfBirth)?.yearOfBirth ?? null,
     gender: allCompetitors[0]?.gender ?? results[0]?.gender ?? null,
   };
 
   const uniqueCompetitions = new Set(results.map((r) => r.competitionId)).size;
   const bestPlacement = results.length > 0 ? Math.min(...results.map((r) => r.placement)) : null;
-  const weightCategories = [...new Set(results.map((r) => r.weightCategory))];
+  const weightClasses = [...new Set(results.map((r) => r.weightClass).filter((w): w is number => w != null))];
 
   const winLoss = deriveWinLoss(athleteName, results.length);
 
@@ -150,7 +139,8 @@ export default async function AthletePage({
   });
 
   const flag = profile.country ? countryFlag(profile.country) : null;
-  const belt = profile.beltRank ? beltEmoji(profile.beltRank) : null;
+  const beltText = judoGradeLabel(profile.judoGrade);
+  const beltEmojiStr = judoGradeEmoji(profile.judoGrade);
 
   return (
     <div className="mx-auto max-w-4xl px-4 pb-16 pt-6">
@@ -180,17 +170,17 @@ export default async function AthletePage({
                   {flag} {profile.country}
                 </span>
               )}
-              {profile.beltRank && (
+              {beltText && (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-sm font-medium">
-                  {belt} {profile.beltRank}
+                  {beltEmojiStr} {beltText}
                 </span>
               )}
-              {profile.birthYear && (
+              {profile.yearOfBirth && (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-sm font-medium">
-                  {locale === "fi" ? "s." : "b."} {profile.birthYear}
+                  {locale === "fi" ? "s." : "b."} {profile.yearOfBirth}
                 </span>
               )}
-              {profile.gender && (
+              {profile.gender && profile.gender !== "UNKNOWN" && (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-sm font-medium">
                   {profile.gender === "MALE"
                     ? locale === "fi" ? "Mies" : "Male"
@@ -220,13 +210,13 @@ export default async function AthletePage({
         </div>
         <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
           <div className="flex min-h-10 flex-wrap items-center gap-1.5">
-            {weightCategories.length > 0
-              ? weightCategories.map((wc) => (
+            {weightClasses.length > 0
+              ? weightClasses.map((wc) => (
                   <span
                     key={wc}
                     className="rounded-full bg-primary/10 px-2.5 py-1 text-sm font-semibold text-primary"
                   >
-                    {wc}
+                    {weightClassLabel(wc)}
                   </span>
                 ))
               : <span className="text-3xl font-extrabold text-primary">–</span>
@@ -286,7 +276,7 @@ export default async function AthletePage({
                       {fmt.format(r.competition.dateStart)}
                     </td>
                     <td className="py-3 pr-4 text-gray-500">
-                      {[r.ageCategory, r.weightCategory].filter(Boolean).join(" ")}
+                      {[r.ageCategory, weightClassLabel(r.weightClass)].filter(Boolean).join(" ") || "–"}
                     </td>
                     <td className={`py-3 text-base font-bold ${placementColor(r.placement)}`}>
                       {placementMedal(r.placement)}

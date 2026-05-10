@@ -53,3 +53,62 @@ export function inferStatus(dateStart: Date, dateEnd: Date): string {
   if (dateStart <= now) return "ONGOING";
   return "UPCOMING";
 }
+
+/**
+ * Split a combined "First Last" or "First Middle Last" name into firstName + lastName.
+ * Heuristic: the last whitespace-delimited token is the last name, the rest is first name.
+ * Falls back to ("", trimmed) if no whitespace is present.
+ */
+export function splitName(combined: string): { firstName: string; lastName: string } {
+  const trimmed = combined.trim().replace(/\s+/g, " ");
+  if (!trimmed) return { firstName: "", lastName: "" };
+  const idx = trimmed.lastIndexOf(" ");
+  if (idx < 0) return { firstName: "", lastName: trimmed };
+  return {
+    firstName: trimmed.slice(0, idx),
+    lastName: trimmed.slice(idx + 1),
+  };
+}
+
+/**
+ * Parse a compact weight class label into an integer.
+ *   "-46kg" → -46
+ *   "+100kg" → 100
+ *   "alle 46 kg" → -46
+ *   "yli 100 kg" → 100
+ */
+export function parseWeightClass(raw: string | null | undefined): number | null {
+  if (!raw) return null;
+  const s = raw.trim().toLowerCase();
+  const m = s.match(/(alle|yli|under|over|[+-]?)\s*(\d+)/);
+  if (!m) return null;
+  const n = parseInt(m[2], 10);
+  if (isNaN(n)) return null;
+  const lead = m[1];
+  if (lead === "alle" || lead === "under" || lead === "-") return -n;
+  if (lead === "yli" || lead === "over" || lead === "+") return n;
+  // Bare number → assume "under" (most common in Finnish judo notation)
+  return -n;
+}
+
+/**
+ * Parse a belt-rank string into a `JudoGrade` enum value.
+ *   "6.kyu" → "K6"        "1 kyu" → "K1"
+ *   "1.dan" → "D1"        "10 dan" → "D10"
+ *   anything else → null
+ */
+export function parseJudoGrade(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const s = raw.toLowerCase();
+  const kyu = s.match(/(\d+)\s*\.?\s*kyu/);
+  if (kyu) {
+    const n = parseInt(kyu[1], 10);
+    if (n >= 1 && n <= 6) return `K${n}`;
+  }
+  const dan = s.match(/(\d+)\s*\.?\s*dan/);
+  if (dan) {
+    const n = parseInt(dan[1], 10);
+    if (n >= 1 && n <= 10) return `D${n}`;
+  }
+  return null;
+}

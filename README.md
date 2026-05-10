@@ -2,7 +2,7 @@
 
 Mobile-first web platform for Finnish judo competitions — results, video feeds, and competitor history.
 
-See [`spec.md`](./spec.md) for the full application specification.
+See [`docs/spec.md`](./docs/spec.md) for the full application specification.
 
 ---
 
@@ -53,7 +53,17 @@ npx prisma migrate deploy
 
 Use `migrate deploy` when targeting a remote database (Supabase, production). It applies the committed SQL files in `prisma/migrations/` without generating new ones.
 
-### 4. Start development server
+### 4. Seed the Club table
+
+The platform comes with 140 pre-mapped Finnish judo clubs (see [`docs/appendix-clubs.md`](./docs/appendix-clubs.md) for the full list). Seed them after migrating:
+
+```bash
+npm run seed
+```
+
+The script reads `docs/appendix-clubs.md` (the source of truth) and upserts each club into the `Club` table. It's idempotent — safe to re-run after the appendix is updated, and it will only modify rows whose `suomiSportName` mapping changed.
+
+### 5. Start development server
 
 ```bash
 npm run dev
@@ -67,8 +77,10 @@ The site is available at [http://localhost:3000](http://localhost:3000). It redi
 |---------|-------------|
 | `npm run build` | Production build + type check |
 | `npm run lint` | ESLint |
+| `npm run seed` | Seed the `Club` table from `docs/appendix-clubs.md` (idempotent; safe to re-run) |
 | `npx prisma studio` | Browse the database in a GUI |
 | `npx prisma migrate deploy` | Apply pending migrations to the database |
+| `npx prisma migrate reset --force` | Drop and recreate the database from migrations (⚠️ destructive — wipes all data) |
 | `npx prisma generate` | Regenerate client after schema edits |
 
 ---

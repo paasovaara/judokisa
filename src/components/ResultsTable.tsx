@@ -1,11 +1,12 @@
 import { useTranslations } from "next-intl";
+import { fullName } from "@/lib/format";
 
 interface ResultRow {
   id: string;
   placement: number;
-  athleteName: string;
-  club?: string | null;
-  weightCategory: string;
+  firstName: string;
+  lastName: string;
+  clubName?: string | null;
 }
 
 interface ResultsTableProps {
@@ -38,9 +39,9 @@ export default function ResultsTable({ results }: ResultsTableProps) {
                 {r.placement}.
               </td>
               <td className="py-2.5 pr-4 font-medium text-gray-900">
-                {r.athleteName}
+                {fullName(r.firstName, r.lastName)}
               </td>
-              <td className="py-2.5 text-gray-500">{r.club ?? "–"}</td>
+              <td className="py-2.5 text-gray-500">{r.clubName ?? "–"}</td>
             </tr>
           ))}
         </tbody>

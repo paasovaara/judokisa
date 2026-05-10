@@ -1,5 +1,6 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
+import { splitName, parseWeightClass, parseJudoGrade } from "../utils/parse.js";
 
 const BASE_URL = "https://judokisa.fi";
 
@@ -10,22 +11,24 @@ export interface CompetitionDetail {
 }
 
 export interface ResultRow {
-  athleteName: string;
-  club: string | null;
-  weightCategory: string;
+  firstName: string;
+  lastName: string;
+  clubName: string | null;
+  weightClass: number | null;
   ageCategory: string | null;
   gender: "MALE" | "FEMALE";
   placement: number;
 }
 
 export interface CompetitorRow {
-  name: string;
+  firstName: string;
+  lastName: string;
   country: string | null;
-  club: string | null;
-  beltRank: string | null;
+  clubName: string | null;
+  judoGrade: string | null;        // JudoGrade enum value, e.g. "K4" or "D1"
   gender: "MALE" | "FEMALE";
-  birthYear: number | null;
-  weightCategory: string;
+  yearOfBirth: number | null;
+  weightClass: number | null;
   ageCategory: string | null;
 }
 
@@ -131,34 +134,33 @@ export async function scrapeCompetitors(sourceId: string): Promise<CompetitorRow
     const cells = $(row).find("td");
     if (cells.length < 7) return;
 
-    const name = cells.eq(0).text().trim();
-    if (!name) return;
+    const fullName = cells.eq(0).text().trim();
+    if (!fullName) return;
+    const { firstName, lastName } = splitName(fullName);
 
     const country = cells.eq(1).text().trim() || null;
-    const club = cells.eq(2).text().trim() || null;
-    const beltRank = cells.eq(3).text().trim() || null;
+    const clubName = cells.eq(2).text().trim() || null;
+    const judoGrade = parseJudoGrade(cells.eq(3).text().trim());
     const genderRaw = cells.eq(4).text().trim().toLowerCase();
     const gender: "MALE" | "FEMALE" = genderRaw === "nainen" || genderRaw === "n" ? "FEMALE" : "MALE";
-    const birthYearRaw = parseInt(cells.eq(5).text().trim(), 10);
-    const birthYear = isNaN(birthYearRaw) ? null : birthYearRaw;
+    const yearRaw = parseInt(cells.eq(5).text().trim(), 10);
+    const yearOfBirth = isNaN(yearRaw) ? null : yearRaw;
     const category = cells.eq(6).text().trim();
 
-    // Parse weightCategory from Finnish: "alle 46 kg" → "-46kg", "yli 100 kg" → "+100kg"
+    // Parse weight class from Finnish: "alle 46 kg" → -46, "yli 100 kg" → 100
     const weightMatch = category.match(/(alle|yli)\s+(\d+)\s*kg/i);
-    let weightCategory: string;
+    let weightClass: number | null;
     let ageCategory: string | null;
     if (weightMatch) {
-      const prefix = weightMatch[1].toLowerCase() === "alle" ? "-" : "+";
-      weightCategory = `${prefix}${weightMatch[2]}kg`;
+      weightClass = parseWeightClass(weightMatch[0]);
       ageCategory = category.replace(weightMatch[0], "").trim() || null;
     } else {
-      // Fallback: grab anything matching a weight pattern
-      const fallbackMatch = category.match(/-?\d+\s*kg/i);
-      weightCategory = fallbackMatch ? fallbackMatch[0] : category;
-      ageCategory = fallbackMatch ? category.replace(fallbackMatch[0], "").trim() || null : null;
+      const fallbackMatch = category.match(/[+-]?\d+\s*kg/i);
+      weightClass = fallbackMatch ? parseWeightClass(fallbackMatch[0]) : null;
+      ageCategory = fallbackMatch ? category.replace(fallbackMatch[0], "").trim() || null : category || null;
     }
 
-    rows.push({ name, country, club, beltRank, gender, birthYear, weightCategory, ageCategory });
+    rows.push({ firstName, lastName, country, clubName, judoGrade, gender, yearOfBirth, weightClass, ageCategory });
   });
 
   return rows;
@@ -212,19 +214,20 @@ export async function scrapeResults(sourceId: string): Promise<ResultRow[]> {
 
     const athleteName = cells.eq(nameCol).text().trim();
     if (!athleteName) return;
+    const { firstName, lastName } = splitName(athleteName);
 
-    const club = cells.eq(clubCol).text().trim() || null;
+    const clubName = cells.eq(clubCol).text().trim() || null;
     const category = cells.eq(categoryCol).text().trim() || "–";
 
     const gender: "MALE" | "FEMALE" = /\bN\b|nainen|women|nais|girl|female/i.test(category)
       ? "FEMALE"
       : "MALE";
 
-    const weightMatch = category.match(/-?\d+\s*kg/i);
-    const weightCategory = weightMatch ? weightMatch[0] : category;
-    const ageCategory = category.replace(weightCategory, "").trim() || null;
+    const weightMatch = category.match(/[+-]?\d+\s*kg/i);
+    const weightClass = weightMatch ? parseWeightClass(weightMatch[0]) : null;
+    const ageCategory = weightMatch ? category.replace(weightMatch[0], "").trim() || null : category || null;
 
-    rows.push({ athleteName, club, weightCategory, ageCategory, gender, placement });
+    rows.push({ firstName, lastName, clubName, weightClass, ageCategory, gender, placement });
   });
 
   return rows;

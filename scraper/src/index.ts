@@ -1,4 +1,5 @@
 import "dotenv/config";
+import type { JudoGrade } from "@prisma/client";
 import { prisma } from "./lib/db.js";
 import { scrapeCompetitionList } from "./scrapers/list.js";
 import { scrapeDetail, scrapeResults, scrapeCompetitors, scrapeVideoFeeds } from "./scrapers/detail.js";
@@ -105,13 +106,14 @@ async function main() {
       await prisma.competitor.createMany({
         data: competitors.map((c) => ({
           competitionId,
-          name: c.name,
-          country: c.country,
-          club: c.club,
-          beltRank: c.beltRank,
-          gender: c.gender as "MALE" | "FEMALE",
-          birthYear: c.birthYear,
-          weightCategory: c.weightCategory,
+          firstName: c.firstName,
+          lastName: c.lastName,
+          country: c.country ?? "FIN",
+          clubName: c.clubName,
+          judoGrade: c.judoGrade as JudoGrade | null,
+          gender: c.gender,
+          yearOfBirth: c.yearOfBirth,
+          weightClass: c.weightClass,
           ageCategory: c.ageCategory,
         })),
       });
@@ -128,11 +130,12 @@ async function main() {
         await prisma.result.createMany({
           data: results.map((r) => ({
             competitionId,
-            athleteName: r.athleteName,
-            club: r.club,
-            weightCategory: r.weightCategory,
+            firstName: r.firstName,
+            lastName: r.lastName,
+            clubName: r.clubName,
+            weightClass: r.weightClass,
             ageCategory: r.ageCategory,
-            gender: r.gender as "MALE" | "FEMALE",
+            gender: r.gender,
             placement: r.placement,
           })),
         });

@@ -1,5 +1,8 @@
-// This is your Prisma schema file.
-// Shared between the frontend (read) and the scraper (write).
+// Prisma schema — target spec from docs/spec.md §5
+// In-scope models for the current implementation wave.
+// Out of scope (deferred): MatchHistory, TeamEntry, Course, SuomiSport caches,
+// auth/session models. The User + UserProfile + CompetitionRefereeInvitation
+// models are included as data tables only — no auth wired in yet.
 
 generator client {
   provider = "prisma-client-js"
@@ -22,6 +25,18 @@ enum CompetitionType {
   INTERNATIONAL
 }
 
+enum CompetitionLevel {
+  SM
+  NSM
+  SC
+  FJO
+  KV
+  STARTTI_CUP
+  KATA
+  TEAM
+  MUU
+}
+
 enum CompetitionStatus {
   UPCOMING
   ONGOING
@@ -29,117 +44,344 @@ enum CompetitionStatus {
   CANCELLED
 }
 
+enum GeographicArea {
+  LOU
+  LAN
+  POH
+  ITA
+  KAA
+  ETE
+}
+
+enum CategoryGender {
+  MEN
+  WOMEN
+  BOTH
+}
+
 enum Gender {
   MALE
   FEMALE
+  UNKNOWN
 }
 
-enum MatchRound {
-  POOL
-  ROUND_OF_32
-  ROUND_OF_16
-  QUARTER_FINAL
-  SEMI_FINAL
-  BRONZE
-  FINAL
+enum JudoGrade {
+  K6
+  K5
+  K4
+  K3
+  K2
+  K1
+  D1
+  D2
+  D3
+  D4
+  D5
+  D6
+  D7
+  D8
+  D9
+  D10
+}
+
+enum RefereeLicenseLevel {
+  D
+  C
+  B
+  A
+  INT_B
+  INT_A
+}
+
+enum RefereeInviteStatus {
+  ASKED
+  DECLINED
+  PROMISED
+  AGREED
+  PRESENT
 }
 
 // ---------------------------------------------------------------------------
-// Models
+// Competition
 // ---------------------------------------------------------------------------
 
 model Competition {
-  id                   String            @id @default(cuid())
-  sourceId             String?           @unique // judokisa.fi ID for dedup
-  name                 String
-  slug                 String            @unique
-  type                 CompetitionType
-  status               CompetitionStatus @default(UPCOMING)
-  dateStart            DateTime
-  dateEnd              DateTime
-  registrationDeadline DateTime?
-  city                 String
-  venue                String?
-  country              String            @default("FI")
-  description          String?
-  categories           String[] // e.g. ["U18", "U21", "Senior"]
-  weightCategories     String[] // e.g. ["-60kg", "-66kg", "-73kg"]
-  capacity             Int?
-  registeredCount      Int               @default(0)
-  registrationUrl      String?
-  results              Result[]
-  matches              Match[]
-  competitors          Competitor[]
-  videoFeeds           VideoFeed[]
-  createdAt            DateTime          @default(now())
-  updatedAt            DateTime          @updatedAt
+  id                     String                         @id @default(cuid())
+  sourceId               String?                        @unique
+  slug                   String                         @unique
+  numericId              Int?                           @unique
+
+  name                   String
+  description            String?
+  city                   String
+  venue                  String?
+  address                String?
+  country                String                         @default("FI")
+  geographicArea         GeographicArea?
+
+  type                   CompetitionType
+  level                  CompetitionLevel?
+
+  status                 CompetitionStatus              @default(UPCOMING)
+  registrationOpen       Boolean                        @default(false)
+  dateStart              DateTime
+  dateEnd                DateTime
+  registrationDeadline   DateTime?
+
+  capacity               Int?
+  registeredCount        Int                            @default(0)
+
+  numberOfTatamiMats     Int                            @default(3)
+  targetRefereeCount     Int                            @default(0)
+  matchDurationMinutes   Int                            @default(7)
+  useCustomVideoHtml     Boolean                        @default(false)
+  extraFieldsConfig      Json?
+  registrationUrl        String?
+  infoUrl                String?
+  resultsUrl             String?
+  previousYearReference  String?
+
+  responsibleUserId      String?
+  responsibleUser        User?                          @relation("ResponsibleUser", fields: [responsibleUserId], references: [id])
+  competitionManagerId   String?
+  competitionManager     User?                          @relation("CompetitionManager", fields: [competitionManagerId], references: [id])
+  competitionAssistantId String?
+  competitionAssistant   User?                          @relation("CompetitionAssistant", fields: [competitionAssistantId], references: [id])
+  judoShiaiOperatorId    String?
+  judoShiaiOperator      User?                          @relation("JudoShiaiOperator", fields: [judoShiaiOperatorId], references: [id])
+  videoOperatorId        String?
+  videoOperator          User?                          @relation("VideoOperator", fields: [videoOperatorId], references: [id])
+
+  categories             CompetitionCategory[]
+  competitors            Competitor[]
+  results                Result[]
+  matches                Match[]
+  videoFeeds             VideoFeed[]
+  refereeInvitations     CompetitionRefereeInvitation[]
+
+  createdAt              DateTime                       @default(now())
+  updatedAt              DateTime                       @updatedAt
 
   @@index([status, dateStart])
   @@index([slug])
+  @@index([level])
 }
 
-model Result {
-  id             String      @id @default(cuid())
-  competition    Competition @relation(fields: [competitionId], references: [id])
-  competitionId  String
-  athleteName    String
-  club           String?
-  weightCategory String
-  ageCategory    String?
-  gender         Gender
-  placement      Int // 1, 2, 3, 5, 7...
-  createdAt      DateTime    @default(now())
+model CompetitionCategory {
+  id            String         @id @default(cuid())
+  competition   Competition    @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  competitionId String
+  code          String
+  nameEn        String
+  nameFi        String
+  minAge        Int            @default(0)
+  maxAge        Int            @default(0)
+  gender        CategoryGender
+  weightClasses Int[]
 
+  competitors   Competitor[]
+  results       Result[]
+  matches       Match[]
+
+  @@unique([competitionId, code])
   @@index([competitionId])
-  @@index([athleteName])
 }
 
-model Match {
-  id             String      @id @default(cuid())
-  competition    Competition @relation(fields: [competitionId], references: [id])
-  competitionId  String
-  athlete1Name   String
-  athlete2Name   String
-  athlete1Club   String?
-  athlete2Club   String?
-  athlete1Score  Int?
-  athlete2Score  Int?
-  winnerName     String?
-  weightCategory String
-  ageCategory    String?
-  gender         Gender
-  round          MatchRound?
-  createdAt      DateTime    @default(now())
+// ---------------------------------------------------------------------------
+// Club
+// ---------------------------------------------------------------------------
 
-  @@index([competitionId])
-  @@index([athlete1Name])
-  @@index([athlete2Name])
+model Club {
+  id             String       @id @default(cuid())
+  displayName    String       @unique
+  country        String       @default("FIN")
+  suomiSportName String?
+  competitors    Competitor[]
+  results        Result[]
 }
+
+// ---------------------------------------------------------------------------
+// Competitor
+// ---------------------------------------------------------------------------
 
 model Competitor {
-  id             String      @id @default(cuid())
-  competition    Competition @relation(fields: [competitionId], references: [id])
-  competitionId  String
-  name           String
-  country        String?
-  club           String?
-  beltRank       String?
-  gender         Gender
-  birthYear      Int?
-  weightCategory String
-  ageCategory    String?
-  createdAt      DateTime    @default(now())
+  id               String                @id @default(cuid())
+  competition      Competition           @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  competitionId    String
+
+  firstName        String
+  lastName         String
+
+  phone            String?
+  email            String?
+
+  yearOfBirth      Int?
+  gender           Gender                @default(UNKNOWN)
+  country          String                @default("FIN")
+
+  clubId           String?
+  club             Club?                 @relation(fields: [clubId], references: [id])
+  clubName         String?
+
+  categoryId       String?
+  category         CompetitionCategory?  @relation(fields: [categoryId], references: [id])
+  weightClass      Int?
+
+  judoGrade        JudoGrade?
+
+  registeredById   String?
+  registeredBy     User?                 @relation("CompetitorRegisteredBy", fields: [registeredById], references: [id])
+  licenseValid     Boolean?
+  ageEligible      Boolean?
+  removed          Boolean               @default(false)
+  extraFieldValues Json?
+
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
 
   @@index([competitionId])
-  @@index([name])
+  @@index([lastName, firstName])
+  @@index([clubId])
 }
+
+// ---------------------------------------------------------------------------
+// Result
+// ---------------------------------------------------------------------------
+
+model Result {
+  id            String               @id @default(cuid())
+  competition   Competition          @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  competitionId String
+  firstName     String
+  lastName      String
+  clubId        String?
+  club          Club?                @relation(fields: [clubId], references: [id])
+  clubName      String?
+  country       String               @default("FIN")
+  category      CompetitionCategory? @relation(fields: [categoryId], references: [id])
+  categoryId    String?
+  weightClass   Int?
+  ageCategory   String?
+  gender        Gender               @default(UNKNOWN)
+  placement     Int
+  createdAt     DateTime             @default(now())
+
+  @@index([competitionId])
+  @@index([lastName, firstName])
+}
+
+// ---------------------------------------------------------------------------
+// Match
+// ---------------------------------------------------------------------------
+
+model Match {
+  id              String               @id @default(cuid())
+  competition     Competition          @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  competitionId   String
+  athlete1First   String
+  athlete1Last    String
+  athlete2First   String
+  athlete2Last    String
+  athlete1Club    String?
+  athlete2Club    String?
+  athlete1Score   Int?
+  athlete2Score   Int?
+  winnerSide      Int?
+  category        CompetitionCategory? @relation(fields: [categoryId], references: [id])
+  categoryId      String?
+  weightClass     Int?
+  gender          Gender               @default(UNKNOWN)
+  createdAt       DateTime             @default(now())
+
+  @@index([competitionId])
+  @@index([athlete1Last, athlete1First])
+  @@index([athlete2Last, athlete2First])
+}
+
+// ---------------------------------------------------------------------------
+// VideoFeed
+// ---------------------------------------------------------------------------
 
 model VideoFeed {
   id            String      @id @default(cuid())
-  competition   Competition @relation(fields: [competitionId], references: [id])
+  competition   Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
   competitionId String
-  name          String      // "Tatami 1", "Tatami 2" …
+  name          String
+  tatamiNumber  Int?
   url           String
 
   @@index([competitionId])
+}
+
+// ---------------------------------------------------------------------------
+// User & UserProfile  (data tables only — auth out of scope this wave)
+// ---------------------------------------------------------------------------
+
+model User {
+  id        String       @id @default(cuid())
+  email     String       @unique
+  password  String?
+  firstName String
+  lastName  String
+  profile   UserProfile?
+
+  responsibleForCompetitions   Competition[]                  @relation("ResponsibleUser")
+  managedCompetitions          Competition[]                  @relation("CompetitionManager")
+  assistedCompetitions         Competition[]                  @relation("CompetitionAssistant")
+  judoShiaiCompetitions        Competition[]                  @relation("JudoShiaiOperator")
+  videoOperatedCompetitions    Competition[]                  @relation("VideoOperator")
+  registeredCompetitors        Competitor[]                   @relation("CompetitorRegisteredBy")
+  refereeInvitations           CompetitionRefereeInvitation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserProfile {
+  id                       String               @id @default(cuid())
+  user                     User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId                   String               @unique
+
+  isReferee                Boolean              @default(false)
+  isAdministrator          Boolean              @default(false)
+  isCommission             Boolean              @default(false)
+  isCoordinator            Boolean              @default(false)
+  isCompetitionManager     Boolean              @default(false)
+  isCompetitionAssistant   Boolean              @default(false)
+  isCompetitionResponsible Boolean              @default(false)
+  isCourseInstructor       Boolean              @default(false)
+  isJudoShiaiOperator      Boolean              @default(false)
+  isVideoOperator          Boolean              @default(false)
+
+  phone                    String?
+  dateOfBirth              DateTime?
+  address                  String?
+  club                     String?
+  geographicArea           GeographicArea?
+  judoGrade                JudoGrade?
+  refereeLicenseLevel      RefereeLicenseLevel?
+  profilePhoto             String?
+
+  suomiSportInternalId     Int?
+  suomiSportPersonId       Int?
+  gdprNoSync               Boolean              @default(false)
+
+  active                   Boolean              @default(true)
+  blacklisted              Boolean              @default(false)
+
+  defaultCategoryCode      String?
+  defaultWeightClass       Int?
+}
+
+model CompetitionRefereeInvitation {
+  competition   Competition         @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  competitionId String
+  referee       User                @relation(fields: [refereeId], references: [id], onDelete: Cascade)
+  refereeId     String
+  status        RefereeInviteStatus @default(ASKED)
+  invitedAt     DateTime            @default(now())
+  respondedAt   DateTime?
+
+  @@id([competitionId, refereeId])
+  @@index([refereeId])
 }

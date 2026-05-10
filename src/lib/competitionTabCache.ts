@@ -1,22 +1,33 @@
+export interface CategoryRef {
+  id: string;
+  code: string;
+  nameEn: string;
+  nameFi: string;
+}
+
 export interface CompetitorItem {
   id: string;
-  name: string;
-  club: string | null;
+  firstName: string;
+  lastName: string;
+  clubName: string | null;       // resolved display name (Club.displayName when matched, free-text otherwise)
   country: string | null;
-  beltRank: string | null;
-  birthYear: number | null;
-  weightCategory: string;
-  ageCategory: string | null;
-  gender: string;
+  judoGrade: string | null;       // JudoGrade enum value, e.g. "K4" or "D1"
+  yearOfBirth: number | null;
+  weightClass: number | null;
+  category: CategoryRef | null;
+  gender: string;                 // Gender enum value
 }
 
 export interface ResultItem {
   id: string;
   competitionId: string;
-  athleteName: string;
-  club: string | null;
-  weightCategory: string;
+  firstName: string;
+  lastName: string;
+  clubName: string | null;
+  country: string;
+  weightClass: number | null;
   ageCategory: string | null;
+  category: CategoryRef | null;
   gender: string;
   placement: number;
   createdAt: string;
@@ -25,23 +36,25 @@ export interface ResultItem {
 export interface MatchItem {
   id: string;
   competitionId: string;
-  athlete1Name: string;
-  athlete2Name: string;
+  athlete1First: string;
+  athlete1Last: string;
+  athlete2First: string;
+  athlete2Last: string;
   athlete1Club: string | null;
   athlete2Club: string | null;
   athlete1Score: number | null;
   athlete2Score: number | null;
-  winnerName: string | null;
-  weightCategory: string;
-  ageCategory: string | null;
+  winnerSide: number | null;       // 1 or 2; null if no winner recorded
+  weightClass: number | null;
+  category: CategoryRef | null;
   gender: string;
-  round: string | null;
   createdAt: string;
 }
 
 export interface VideoFeedItem {
   id: string;
   name: string;
+  tatamiNumber: number | null;
   url: string;
 }
 
@@ -65,7 +78,6 @@ interface CacheEntry {
 export const STALE_MS = 60_000;
 
 const cache = new Map<string, CacheEntry>();
-/** In-flight request deduplication — prevents duplicate concurrent fetches (e.g. React StrictMode). */
 const inflight = new Map<string, Promise<{ data: TabData; changed: boolean }>>();
 
 export function emptyTabData(): TabData {
@@ -90,13 +102,6 @@ export function isStale(slug: string): boolean {
   return Date.now() - entry.fetchedAt > STALE_MS;
 }
 
-/**
- * Fetch tab data from the API, update the cache, and return whether
- * the payload changed since the last fetch.
- *
- * - 404: returns empty TabData (competition exists in routing but not yet in DB).
- * - Other non-2xx: throws so the caller can preserve stale data.
- */
 export function fetchTabs(slug: string): Promise<{ data: TabData; changed: boolean }> {
   const existing = inflight.get(slug);
   if (existing) return existing;

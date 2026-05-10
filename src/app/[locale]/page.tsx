@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import CompetitionCard from "@/components/CompetitionCard";
+import { fullName, weightClassLabel } from "@/lib/format";
 import type { Metadata } from "next";
 
 export async function generateMetadata({
@@ -29,8 +30,18 @@ async function getHomeData() {
         include: {
           results: {
             where: { placement: { lte: 3 } },
-            orderBy: [{ weightCategory: "asc" }, { placement: "asc" }],
+            orderBy: [{ weightClass: "asc" }, { placement: "asc" }],
             take: 30,
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              placement: true,
+              weightClass: true,
+              ageCategory: true,
+              clubName: true,
+              club: { select: { displayName: true } },
+            },
           },
         },
       }),
@@ -161,8 +172,8 @@ export default async function HomePage({
                           <span className="w-5 text-center font-bold text-gray-400">
                             {r.placement}.
                           </span>
-                          <span className="text-gray-700">{r.athleteName}</span>
-                          <span className="text-xs text-gray-400">{r.weightCategory}</span>
+                          <span className="text-gray-700">{fullName(r.firstName, r.lastName)}</span>
+                          <span className="text-xs text-gray-400">{weightClassLabel(r.weightClass)}</span>
                         </li>
                       ))}
                     </ul>

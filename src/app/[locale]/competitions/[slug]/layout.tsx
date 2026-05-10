@@ -57,7 +57,6 @@ export default async function CompetitionLayout({
         dateEnd: true,
         city: true,
         venue: true,
-        categories: true,
         capacity: true,
         registeredCount: true,
         registrationDeadline: true,

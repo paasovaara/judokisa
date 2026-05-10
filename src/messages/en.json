@@ -2,6 +2,7 @@
   "nav": {
     "competitions": "Competitions",
     "history": "History",
+    "admin": "Admin",
     "language": "Language"
   },
   "home": {
@@ -66,7 +67,6 @@
     "vs": "vs",
     "score": "Score",
     "winner": "Winner",
-    "round": "Round",
     "placements_tab": "Placements",
     "matches_tab": "Matches"
   },
@@ -84,14 +84,99 @@
     "COMPLETED": "Completed",
     "CANCELLED": "Cancelled"
   },
-  "rounds": {
-    "POOL": "Pool",
-    "ROUND_OF_32": "Round of 32",
-    "ROUND_OF_16": "Round of 16",
-    "QUARTER_FINAL": "Quarter-final",
-    "SEMI_FINAL": "Semi-final",
-    "BRONZE": "Bronze match",
-    "FINAL": "Final"
+  "admin": {
+    "title": "Admin",
+    "subtitle": "Manage competitions, referees, users and clubs.",
+    "subnav": {
+      "competitions": "Competitions",
+      "referees": "Referees",
+      "courses": "Courses",
+      "users": "Users",
+      "clubs": "Clubs",
+      "suomisport": "SuomiSport sync"
+    },
+    "competitions": {
+      "title": "Competitions",
+      "new": "New competition",
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save",
+      "cancel": "Cancel",
+      "search_placeholder": "Search by name or city…",
+      "no_results": "No competitions yet.",
+      "delete_confirm": "Delete this competition? All categories, competitors, results, matches, video feeds, and referee invitations will also be removed.",
+      "form": {
+        "name": "Name",
+        "slug": "Slug",
+        "type": "Type",
+        "level": "Level",
+        "status": "Status",
+        "registration_open": "Registration open",
+        "date_start": "Start date",
+        "date_end": "End date",
+        "registration_deadline": "Registration deadline",
+        "city": "City",
+        "venue": "Venue",
+        "address": "Address",
+        "country": "Country",
+        "geographic_area": "Geographic area",
+        "capacity": "Capacity",
+        "tatami_count": "Number of tatami mats",
+        "target_referee_count": "Target referee count",
+        "match_duration": "Match duration (minutes)",
+        "use_custom_video_html": "Use custom video HTML",
+        "description": "Description",
+        "registration_url": "Registration URL",
+        "info_url": "Info URL",
+        "results_url": "Results URL"
+      }
+    },
+    "categories": {
+      "title": "Categories",
+      "new": "New category",
+      "code": "Code",
+      "name_en": "Name (English)",
+      "name_fi": "Name (Finnish)",
+      "min_age": "Minimum age",
+      "max_age": "Maximum age",
+      "gender": "Gender",
+      "weight_classes": "Weight classes (comma-separated, negative = under, positive = over)",
+      "no_categories": "No categories defined yet.",
+      "seed_defaults": "Seed default categories"
+    },
+    "competitors": {
+      "title": "Competitors",
+      "new": "Add competitor",
+      "no_competitors": "No competitors registered yet.",
+      "soft_deleted": "Removed (soft-deleted)"
+    },
+    "video_feeds": {
+      "title": "Video feeds",
+      "new": "Add feed",
+      "no_feeds": "No video feeds yet."
+    },
+    "referees": {
+      "title": "Referees",
+      "all_users": "User pool",
+      "new": "New user",
+      "no_users": "No users yet.",
+      "invite": "Invite",
+      "no_invitations": "No referee invitations yet.",
+      "status_ASKED": "Asked",
+      "status_DECLINED": "Declined",
+      "status_PROMISED": "Promised",
+      "status_AGREED": "Agreed",
+      "status_PRESENT": "Present"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "categories": "Categories",
+      "competitors": "Competitors",
+      "results": "Results",
+      "matches": "Matches",
+      "video_feeds": "Video feeds",
+      "referees": "Referees"
+    }
   },
   "footer": {
     "copyright": "Finnish Judo Federation",

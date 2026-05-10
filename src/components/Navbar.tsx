@@ -18,6 +18,7 @@ export default function Navbar() {
   const navLinks = [
     { href: `/${locale}/competitions`, label: t("competitions") },
     { href: `/${locale}/history`, label: t("history") },
+    { href: `/${locale}/admin`, label: t("admin") },
   ];
 
   const isActive = (href: string) => pathname.startsWith(href);

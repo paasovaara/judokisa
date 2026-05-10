@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { use } from "react";
 import { useCompetitionTabs } from "@/components/CompetitionTabsProvider";
 import CompetitorTable from "@/components/CompetitorTable";
-import type { ResultItem } from "@/lib/competitionTabCache";
+import type { CompetitorItem, ResultItem } from "@/lib/competitionTabCache";
 
 export default function CompetitionAthletesPage({
   params,
@@ -32,23 +32,27 @@ export default function CompetitionAthletesPage({
 
   // Completed with no competitor records — derive from results
   if (data.status === "COMPLETED" && data.results.length > 0) {
-    const competitors = data.results.map((r: ResultItem, i: number) => ({
+    const competitors: CompetitorItem[] = data.results.map((r: ResultItem, i: number) => ({
       id: String(i),
-      name: r.athleteName,
-      club: r.club,
-      country: null,
-      beltRank: null,
-      birthYear: null,
-      weightCategory: r.weightCategory,
-      ageCategory: r.ageCategory,
+      firstName: r.firstName,
+      lastName: r.lastName,
+      clubName: r.clubName,
+      country: r.country,
+      judoGrade: null,
+      yearOfBirth: null,
+      weightClass: r.weightClass,
+      category: r.category,
       gender: r.gender,
     }));
+
+    const uniqueAthletes = new Set(
+      competitors.map((c) => `${c.lastName}|${c.firstName}`),
+    ).size;
 
     return (
       <div>
         <p className="mb-4 text-sm text-gray-500">
-          {new Set(competitors.map((c) => c.name)).size}{" "}
-          {locale === "fi" ? "kilpailijaa" : "athletes"}
+          {uniqueAthletes} {locale === "fi" ? "kilpailijaa" : "athletes"}
         </p>
         <CompetitorTable competitors={competitors} locale={locale} />
       </div>

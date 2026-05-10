@@ -1,6 +1,6 @@
 # Judokisa — Technical Specifications
 
-> This document covers concrete implementation details: database schema, file formats, integration protocols, and data conventions.
+> This document covers concrete implementation details from the legacy application: database schema, file formats, integration protocols, and data conventions.
 > For product-level requirements (what the system does and why) see [requirements.md](requirements.md).
 
 ---

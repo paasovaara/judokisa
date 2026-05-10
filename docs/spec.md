@@ -691,13 +691,15 @@ model SuomiSportGrantedMerit {
 
 ### 6.2 Authenticated routes
 
+The full set of authenticated routes is listed below. The user-facing **navigation structure** that surfaces them is described in §6.7 — every management page lives under a single top-level "Admin / Hallinta" entry, with a role-filtered subnav.
+
 | Route | Roles | Purpose |
 |---|---|---|
 | `/auth/login`, `/auth/register`, `/auth/reset-password`, `/auth/callback/[provider]` | Public | Auth flows |
 | `/profile` | Any authenticated | Edit own profile, view referee history & courses |
 | `/profile/invitations` | Referee | Pending referee invitations (accept / decline) |
-| `/admin` | Admin / Manager / Coordinator (per page) | Dashboard hub |
-| `/admin/competitions` | Admin / Commission / Manager | Competition management |
+| `/admin` | Any user with an admin-relevant role | Landing page; subnav-driven |
+| `/admin/competitions` | Admin / Commission / Manager / Assistant | Competition management |
 | `/admin/competitions/[id]/referees` | Manager / Assistant / Responsible | Invite referees, mark attendance |
 | `/admin/competitions/[id]/competitors` | Manager / Assistant / Admin | Registrant list, analyze, close registration |
 | `/admin/competitions/[id]/sftp` | Admin | View / regenerate SSH keys |
@@ -706,6 +708,8 @@ model SuomiSportGrantedMerit {
 | `/admin/clubs` | Admin | Club CRUD, SuomiSport name mapping |
 | `/admin/courses` | Course Instructor / Admin | Course CRUD, participant lists |
 | `/admin/suomisport/sync` | Admin | Trigger sync, view progress |
+
+`/profile` and `/profile/invitations` are reached via a user-avatar dropdown in the global header, **not** via the Admin / Hallinta entry.
 
 ### 6.3 Home (`/`)
 
@@ -766,6 +770,31 @@ Tab data fetched once via `/api/competitions/[slug]/tabs` on layout mount, store
 - Optional second athlete name for head-to-head view
 - Single athlete: competition history table (competition, date, city, category, placement)
 - Head-to-head: all matches between the two athletes (competition, date, score, winner)
+
+### 6.7 Admin section (`/admin`)
+
+All management functionality is exposed through **one** top-level navigation entry in the global header — labelled **"Admin"** (en) / **"Hallinta"** (fi). Everything reachable only by authenticated managers, coordinators, instructors, commission members, or administrators lives behind this single entry; the public marketing-style nav (Home, Competitions, History) is unaffected by login state.
+
+**Visibility of the entry itself.** The "Admin / Hallinta" entry is rendered in the global header **only when the current user holds at least one admin-relevant role flag** on their `UserProfile` (§5.10) — `isAdministrator`, `isCommission`, `isCoordinator`, `isCompetitionManager`, `isCompetitionAssistant`, `isCompetitionResponsible`, or `isCourseInstructor`. Anonymous visitors and authenticated registrants without admin roles never see it.
+
+**Subnav.** Clicking "Admin / Hallinta" lands the user on `/admin`, which renders a **role-filtered subnav** in the same pill-style horizontal layout as the competition detail tab bar (§6.5). Each subnav item is shown only when the user holds at least one of the listed roles; hidden items are also blocked by the route guard at the server layer (defence in depth — the UI filter is not the security boundary).
+
+| Subnav item | Label (fi) | Visible to | Route |
+|---|---|---|---|
+| Competitions | Kilpailut | Administrator · Commission · Competition Manager · Competition Assistant · Competition Responsible | `/admin/competitions` |
+| Referees | Tuomarit | Administrator · Coordinator · Competition Manager · Competition Assistant | `/admin/referees` |
+| Courses | Kurssit | Administrator · Course Instructor | `/admin/courses` |
+| Users | Käyttäjät | Administrator | `/admin/users` |
+| Clubs | Seurat | Administrator | `/admin/clubs` |
+| SuomiSport sync | SuomiSport-synkronointi | Administrator | `/admin/suomisport/sync` |
+
+If a user has access to only one subnav item, that item's page is the default landing view of `/admin`. If the user has access to none, `/admin` returns 404 (matching the hidden-entry behaviour in the global header).
+
+**Drill-down.** Per-competition admin pages (`/admin/competitions/[id]/referees`, `.../competitors`, `.../sftp`) are reached by clicking into a competition row from `/admin/competitions` — they are **not** top-level subnav items. Each competition's admin view uses its own secondary tab bar (Referees / Competitors / SFTP) following the same pattern.
+
+**Mobile behaviour.** The Admin / Hallinta subnav scrolls horizontally on mobile so every available item remains reachable. The global header collapses into the same hamburger pattern as the public site (§7.3); the user avatar (with `/profile` and `/profile/invitations`) sits next to the hamburger or in the menu drawer.
+
+**Why a single entry.** Surfacing each admin domain (Competitions / Referees / Users / Clubs / Courses / SuomiSport) as a separate top-level header item would clutter the nav and force every header render to evaluate seven role checks. A single "Admin / Hallinta" entry keeps the public nav clean, makes the role check binary at the header layer, and matches the legacy judokisa.fi mental model that operators already have.
 
 ---
 

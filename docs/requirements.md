@@ -87,154 +87,43 @@ Weight class notation: `-66` = under 66 kg (up to and including), `+100` = over 
 ---
 
 ### User / Referee Profile
-Represents a registered system user — primarily referees and administrators. Stored as two tables: the core account and an extended profile.
+Represents a registered system user — primarily referees and administrators.
 
-**Table: `user`**
+**Mandatory fields:** email (login identifier and notification address), first name, last name. Password is mandatory for email-based accounts; may be absent for social-auth-only accounts.
 
-| Field | Type | Mandatory? | Notes |
-|---|---|---|---|
-| Primary key | `BIGSERIAL` | — | |
-| Email | `VARCHAR(254)` | **Mandatory** | Unique; used as login identifier and for notifications |
-| Password | `VARCHAR(128)` | **Mandatory** | Stored as hash; may be absent if social auth only |
-| First name | `VARCHAR(150)` | **Mandatory** | |
-| Last name | `VARCHAR(150)` | **Mandatory** | |
+**Optional profile fields:** phone number, date of birth, postal address, club affiliation (free text — referees may belong to clubs not in the club table), geographic area (one of six Finnish regions), judo grade (6th kyu through 10th dan), referee license level (D / C / B / A / INT B / INT A), SuomiSport IDs (internal and public), active/inactive flag, profile photo, GDPR no-sync flag (blocks SuomiSport sync), blacklist flag (blocks system access), default competition category code (pre-fills registration forms), default weight class in kg (pre-fills registration forms).
 
-**Table: `user_profile`** (one-to-one with `user`)
+**Role flags** (all boolean, all default false): referee, administrator, commission, coordinator, competition manager, competition assistant, competition responsible, course instructor, JudoShiai operator, video operator.
 
-| Field | Type | Mandatory? | Notes |
-|---|---|---|---|
-| Primary key | `BIGSERIAL` | — | |
-| User | `BIGINT` FK → `user` | **Mandatory** | Unique; cascade delete |
-| Is referee | `BOOLEAN` | Optional | Default `false` |
-| Is administrator | `BOOLEAN` | Optional | Default `false` |
-| Is commission | `BOOLEAN` | Optional | Default `false` |
-| Is coordinator | `BOOLEAN` | Optional | Default `false` |
-| Is competition manager | `BOOLEAN` | Optional | Default `false` |
-| Is competition assistant | `BOOLEAN` | Optional | Default `false` |
-| Is competition responsible | `BOOLEAN` | Optional | Default `false` |
-| Is course instructor | `BOOLEAN` | Optional | Default `false` |
-| Is JudoShiai operator | `BOOLEAN` | Optional | Default `false` |
-| Is video operator | `BOOLEAN` | Optional | Default `false` |
-| Phone number | `VARCHAR(32)` | Optional | |
-| Date of birth | `DATE` | Optional | |
-| Address | `VARCHAR(255)` | Optional | |
-| Club | `VARCHAR(64)` | Optional | Free-text; referees may belong to clubs not in the club table. |
-| Geographic area | `VARCHAR(3)` | Optional | Enum: `LOU` / `LAN` / `POH` / `ITA` / `KAA` / `ETE`; default unknown |
-| Judo grade | `VARCHAR(4)` | Optional | Enum: `6k`…`1k`, `1d`…`10d`; default ungraded |
-| Referee license level | `VARCHAR(8)` | Optional | Enum: `D` / `C` / `B` / `A` / `INT_B` / `INT_A`; default none |
-| SuomiSport internal ID | `INTEGER` | Optional | Internal SuomiSport row identifier |
-| SuomiSport person ID | `INTEGER` | Optional | Public SuomiSport person ID |
-| Active | `BOOLEAN` | Optional | Default `true` |
-| Profile photo | `TEXT` | Optional | Server-relative file path |
-| GDPR no-sync flag | `BOOLEAN` | Optional | Default `false`; blocks SuomiSport data sync |
-| Blacklisted | `BOOLEAN` | Optional | Default `false`; blocks system access |
-| Default category code | `VARCHAR(8)` | Optional | Preferred competition category, e.g. `M`, `T18`; used to pre-fill registration forms |
-| Default weight class | `SMALLINT` | Optional | Preferred weight class in kg; negative = "under X" (e.g. `-66`), positive = "over X" (e.g. `100`); used to pre-fill registration forms |
+For field-level data types and constraints, see [Specifications §1: Database Schema](specifications.md#1-database-schema).
 
 ---
 
-### Competition (Contest)
+### Competition (Contest) — additional detail
 
-**Table: `competition`**
+The competition record also tracks per-competition staff assignments (responsible person, manager, assistant, JudoShiai operator, video operator), extra competitor data field definitions (configurable JSON schema for fields specific to that event), video stream URLs per tatami (up to 4), and a reference to a prior year's competition for continuity.
 
-| Field | Type | Mandatory? | Notes |
-|---|---|---|---|
-| Primary key | `BIGSERIAL` | — | |
-| Name | `VARCHAR(64)` | **Mandatory** | |
-| City / venue | `VARCHAR(64)` | **Mandatory** | |
-| Start date | `DATE` | **Mandatory** | |
-| End date | `DATE` | **Mandatory** | |
-| Address | `VARCHAR(128)` | Optional | Default empty |
-| Geographic area | `VARCHAR(3)` | Optional | Same enum as user profile area; default unknown |
-| Registration deadline | `DATE` | Optional | Null if not set |
-| Number of tatami mats | `SMALLINT` | Optional | Default `3` |
-| Target referee count | `SMALLINT` | Optional | Default `0` |
-| Match duration (minutes) | `SMALLINT` | Optional | Default `7` |
-| Competition level | `VARCHAR(16)` | Optional | Enum: `SM` / `NSM` / `SC` / `FJO` / `KV` / `Muu` / `StarttiCup` / `Kata` / `Team`; default `Muu` |
-| Registration open | `BOOLEAN` | Optional | Default `false` |
-| Maximum competitor capacity | `INTEGER` | Optional | Default `0` (no limit) |
-| Current competitor count | `INTEGER` | Optional | Maintained by system; default `0` |
-| Responsible person | `BIGINT` FK → `user` | Optional | Nullable |
-| Competition manager | `BIGINT` FK → `user` | Optional | Nullable |
-| Competition assistant | `BIGINT` FK → `user` | Optional | Nullable |
-| JudoShiai operator | `BIGINT` FK → `user` | Optional | Nullable |
-| Video operator | `BIGINT` FK → `user` | Optional | Nullable |
-| Use custom video HTML | `BOOLEAN` | Optional | Default `false` |
-| Extra competitor field definitions | `JSONB` | Optional | Array of field label configs; default `[]` |
-| Info URL | `TEXT` | Optional | External link; nullable |
-| Results URL | `TEXT` | Optional | External link; nullable |
-| Previous year reference | `INTEGER` | Optional | Reference to prior year's competition ID |
+Referee invitations are tracked per competition with a status that progresses through: Asked → Declining / Promising / Agreed → Present.
 
-**Table: `competition_video_stream`** (child of `competition`; replaces 4 separate URL columns)
+Competition categories are defined per competition and include: short code, English and Finnish names, minimum age, maximum age, gender eligibility, and an ordered list of weight classes.
 
-| Field | Type | Mandatory? | Notes |
-|---|---|---|---|
-| Primary key | `BIGSERIAL` | — | |
-| Competition | `BIGINT` FK → `competition` | **Mandatory** | Cascade delete |
-| Tatami number | `SMALLINT` | **Mandatory** | 1–4 |
-| Stream URL | `TEXT` | **Mandatory** | YouTube or other stream URL |
-
-**Table: `competition_referee_invitation`** (replaces four separate many-to-many tables)
-
-| Field | Type | Mandatory? | Notes |
-|---|---|---|---|
-| Competition | `BIGINT` FK → `competition` | **Mandatory** | Composite PK with referee |
-| Referee | `BIGINT` FK → `user` | **Mandatory** | Composite PK with competition |
-| Status | `VARCHAR(10)` | **Mandatory** | Enum: `ASKED` / `DECLINED` / `PROMISED` / `AGREED` / `PRESENT` |
-| Invited at | `TIMESTAMPTZ` | **Mandatory** | When the invitation was sent |
-
-**Table: `competition_category`** (child of `competition`; replaces encoded category definition strings)
-
-| Field | Type | Mandatory? | Notes |
-|---|---|---|---|
-| Primary key | `BIGSERIAL` | — | |
-| Competition | `BIGINT` FK → `competition` | **Mandatory** | Cascade delete |
-| Code | `VARCHAR(8)` | **Mandatory** | e.g. `M`, `N`, `P18`, `T15` |
-| English name | `VARCHAR(64)` | **Mandatory** | |
-| Finnish name | `VARCHAR(64)` | **Mandatory** | |
-| Minimum age | `SMALLINT` | **Mandatory** | `0` = no minimum |
-| Maximum age | `SMALLINT` | **Mandatory** | `0` = no maximum |
-| Gender | `VARCHAR(10)` | **Mandatory** | Enum: `men` / `women` / `both` |
-| Weight classes | `SMALLINT[]` | **Mandatory** | Ordered array; negative = "under X kg" (e.g. `-66`), positive = "over X kg" (e.g. `100` means `+100`) |
+For the full field list and data types, see [Specifications §1: Database Schema](specifications.md#1-database-schema).
 
 ---
 
 ### Competitor
 
-**Table: `competitor`**
+**Mandatory fields:** first name, last name, phone, email, competition category, year of birth, competition.
 
-| Field | Type | Mandatory? | Notes |
-|---|---|---|---|
-| Primary key | `BIGSERIAL` | — | |
-| First name | `VARCHAR(64)` | **Mandatory** | |
-| Last name | `VARCHAR(150)` | **Mandatory** | |
-| Phone | `VARCHAR(32)` | **Mandatory** | |
-| Email | `VARCHAR(150)` | **Mandatory** | |
-| Category | `BIGINT` FK → `competition_category` | **Mandatory** | |
-| Year of birth | `SMALLINT` | **Mandatory** | Four-digit year |
-| Competition | `BIGINT` FK → `competition` | **Mandatory** | |
-| Country | `CHAR(3)` | Optional | IOC 3-letter code; default `FIN` |
-| Club | `BIGINT` FK → `club` | Optional | Nullable |
-| Gender | `VARCHAR(10)` | Optional | Enum: `male` / `female` / `unknown`; default `unknown` |
-| Judo grade | `VARCHAR(4)` | Optional | Same enum as user profile grade; default ungraded |
-| Registered by | `BIGINT` FK → `user` | Optional | Who registered them; nullable |
-| License valid | `BOOLEAN` | Optional | `null` = not yet checked |
-| Age eligible | `BOOLEAN` | Optional | `null` = not yet checked |
-| Removed | `BOOLEAN` | Optional | Soft-delete; default `false` |
-| Extra field values | `JSONB` | Optional | Values for competition-specific extra fields; default `{}` |
+**Optional fields:** country (IOC code, default Finland), club, gender, judo grade, registrant (who registered them), license validity flag (null = not yet checked), age eligibility flag (null = not yet checked), soft-delete flag, extra field values for competition-specific data.
+
+For field-level data types and constraints, see [Specifications §1: Database Schema](specifications.md#1-database-schema).
 
 ---
 
 ### Club
 
-**Table: `club`**
-
-| Field | Type | Mandatory? | Notes |
-|---|---|---|---|
-| Primary key | `BIGSERIAL` | — | |
-| Display name | `VARCHAR(64)` | **Mandatory** | Name as used in Judokisa |
-| Country | `CHAR(3)` | Optional | IOC 3-letter code; default `FIN` |
-| SuomiSport name | `VARCHAR(128)` | Optional | Official name in SuomiSport; `null` if no mapping established (21 clubs) |
+**Mandatory field:** display name (as used in Judokisa). **Optional:** country (default Finland), official SuomiSport name (null if no mapping established — 21 clubs currently have no mapping).
 
 140 Finnish clubs are pre-loaded in the system. See [Appendix: Pre-loaded Finnish Judo Clubs](appendix-clubs.md) for the full list with both display names and SuomiSport mappings.
 
@@ -242,31 +131,11 @@ Represents a registered system user — primarily referees and administrators. S
 
 ### Training Course
 
-**Table: `course`**
+**Mandatory fields:** name, location, start date, end date.
 
-| Field | Type | Mandatory? | Notes |
-|---|---|---|---|
-| Primary key | `BIGSERIAL` | — | |
-| Name | `VARCHAR(64)` | **Mandatory** | |
-| Location | `VARCHAR(64)` | **Mandatory** | |
-| Start date | `DATE` | **Mandatory** | |
-| End date | `DATE` | **Mandatory** | |
-| Level | `VARCHAR(2)` | Optional | Enum: `UP` (Update) / `MA` (Main Training) / `OT` (Other) / `SE` (Seminar); null = unknown |
-| SuomiSport course ID | `INTEGER` | Optional | Null until synced from SuomiSport |
+**Optional fields:** level (Update / Main Training / Other / Seminar), SuomiSport course ID (set when synced from the national database). Each course has a list of instructors and a list of participating referees (many-to-many).
 
-**Table: `course_instructor`** (many-to-many: course ↔ user)
-
-| Field | Type | Notes |
-|---|---|---|
-| Course | `BIGINT` FK → `course` | Composite PK |
-| Instructor | `BIGINT` FK → `user` | Composite PK |
-
-**Table: `course_participant`** (many-to-many: course ↔ user)
-
-| Field | Type | Notes |
-|---|---|---|
-| Course | `BIGINT` FK → `course` | Composite PK |
-| Participant | `BIGINT` FK → `user` | Composite PK |
+For field-level data types and constraints, see [Specifications §1: Database Schema](specifications.md#1-database-schema).
 
 ---
 
@@ -274,31 +143,18 @@ Represents a registered system user — primarily referees and administrators. S
 
 Each competition has a document space containing:
 - A **menu index** — a hierarchical list of menu items defining the navigation structure for that competition's info section
-- **HTML content pages** — raw HTML files editable via a WYSIWYG editor within the system
+- **HTML content pages** — rich-text pages editable via a WYSIWYG editor within the system; raw HTML editing is also supported
 - **Uploaded files** — PDFs, images, or other static files that menu items can link to
 
 There is also a **global document space** (not tied to any competition) for general Federation materials.
 
-**Storage:** All files are stored on the server filesystem under a per-competition directory. The menu structure is stored as a JSON file (`index.json`) in the same directory. HTML content pages are stored as individual `.html` files.
+**Menu structure:** Each item is one of: a dropdown header (with child items), an HTML content page link, an external URL link, or a file download link. Items can be marked hidden — excluded from the public menu but still accessible by direct URL. Item titles are bilingual (Finnish and English).
 
-**Menu structure:** The `index.json` defines a tree of items. Each item is one of:
-- A **menu header** with a label (Finnish + English) and child items — rendered as a dropdown
-- A **page link** pointing to an HTML content file in the same directory — loaded in an iframe when clicked
-- An **external URL link** — opens in a new browser tab
-- A **file link** pointing to an uploaded PDF or other asset
-
-Menu item titles can be prefixed with `-` to hide them from the public-facing menu while keeping the file accessible by direct URL.
-
-**Editing:** Authorized users access a menu editor that allows:
-- Adding, removing, and reordering menu items via drag-and-drop
-- Editing item titles in Finnish and English
-- Creating new HTML content pages with a WYSIWYG HTML editor (Summernote)
-- Uploading files to attach to menu items
-- Deleting files and menu items
-
-**Display:** The end user sees the competition's info tab as a navigation bar (dropdowns for nested items) with an iframe below it. Clicking a menu item loads the corresponding HTML page or file into the iframe. The first available page loads automatically on arrival.
+**Display:** The competition info tab renders as a navigation bar (dropdowns for nested items) with an inline frame below it. Clicking a menu item loads the corresponding page or file into the frame. The first available page loads automatically.
 
 **Access:** Editing requires one of: competition manager, competition assistant, coordinator, commission, or administrator role. The global document space requires administrator role.
+
+For storage format and menu structure details, see [Specifications §4: Competition Documents Storage Format](specifications.md#4-competition-documents-storage-format).
 
 ---
 
@@ -427,6 +283,8 @@ A separate, regeneratable record of historical match results parsed from JudoShi
 - SSH keypairs are generated per competition; the private key is downloadable by admins
 - SFTP users are provisioned and deprovisioned via the system (backed by server-side scripting)
 
+For SFTP username conventions, SSH key type, and provisioning details, see [Specifications §7: SFTP User Management](specifications.md#7-sftp-user-management).
+
 ---
 
 ### 4.9 SuomiSport Integration
@@ -478,10 +336,10 @@ A separate, regeneratable record of historical match results parsed from JudoShi
 **Example output:**
 ```
 Men under 66 kg
-1. Aholainen Niilo, Koyama; 2. Smyroff Ivan, Koyama; 3. Mäki Jari, Koyama; 3. Karvonen Pekka, Helsingin JS
+1. Tolonen Urho, Koyama; 2. Hätinen Riku, Koyama; 3. Suvanto Aleksi, Koyama; 3. Kolehmainen Tauno, Helsingin JS
 
 Women over 78 kg
-1. Virtanen Anna, Tampereen Judo; 2. Korhonen Liisa, Espoon JK
+1. Marttinen Satu, Tampereen Judo; 2. Savolainen Pirjo, Espoon JK
 ```
 
 **Category label format:**
@@ -490,12 +348,13 @@ Women over 78 kg
 - Labels are language-aware: Finnish when the UI language is Finnish ("alle 66 kg", "yli 78 kg"), English otherwise
 
 **Data source:**
-- Results are read exclusively from the `results.json` file uploaded by the JudoShiai operator via SFTP
-- Not drawn from the competitor registration table
-- If no results file exists, the view returns nothing
+- Results are read exclusively from the result file uploaded by the JudoShiai operator via SFTP — not from the competitor registration table
+- If no results file has been uploaded yet, the view returns nothing
+
+For the exact file format, see [Specifications §2: JudoShiai File Formats](specifications.md#2-judoshiai-file-formats).
 
 **Category ordering:**
-- Categories appear in the order they exist in `results.json` — no re-sorting is applied
+- Categories appear in the order they exist in the uploaded results file — no re-sorting is applied
 
 **Placements shown:**
 - All placements are shown (1st, 2nd, 3rd, and beyond) — there is no cutoff
@@ -603,9 +462,11 @@ Agreed → Present (attended, recorded after event)
 ### StarttiCup Eligibility
 - A competitor is flagged as ineligible for StarttiCup if they have **more than 5 wins** in regular-level competitions (i.e. 6 or more wins triggers the flag)
 - Only wins from Finnish competitors are checked; foreign competitors (non-FIN) bypass the check entirely
-- Wins in other beginner-type events are excluded from the count — specifically competitions whose name starts with "Startti" or "Junnu", or contains "salikisa"
+- Wins in other beginner-type events (recognized by naming conventions) are excluded from the count to avoid double-penalising beginners
 - Win count is derived from the match history database
 - The flag does not hard-block registration; it is surfaced as a warning visible to organizers during the analyze step
+
+For the exact query logic and beginner-event name patterns used, see [Specifications §8: StarttiCup Eligibility Logic](specifications.md#8-startticum-eligibility-logic).
 
 ### SFTP Access Security
 - SFTP users have no shell access; they are confined to their competition directory only

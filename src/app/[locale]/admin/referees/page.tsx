@@ -31,6 +31,7 @@ export default async function AdminRefereesPage({
   }> = [];
   try {
     users = await prisma.user.findMany({
+      where: { profile: { is: { isReferee: true } } },
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
       select: {
         id: true, firstName: true, lastName: true, email: true,

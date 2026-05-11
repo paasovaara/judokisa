@@ -28,6 +28,7 @@ export default async function AdminLandingPage({
   const cards = [
     { href: `/${locale}/admin/competitions`, label: tSub("competitions"), count: stats.competitions, emoji: "🥋" },
     { href: `/${locale}/admin/referees`,     label: tSub("referees"),     count: stats.users,        emoji: "🧑‍⚖️" },
+    { href: `/${locale}/admin/users`,        label: tSub("users"),        count: stats.users,        emoji: "👤" },
     { href: `/${locale}/admin/clubs`,        label: tSub("clubs"),        count: stats.clubs,        emoji: "🏛️" },
   ];
 

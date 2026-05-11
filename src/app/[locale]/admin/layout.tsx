@@ -16,9 +16,9 @@ export default async function AdminLayout({
   // not yet implemented and link to /admin (the landing page).
   const items = [
     { href: `/${locale}/admin/competitions`, label: t("competitions"), emoji: "🥋" },
+    { href: `/${locale}/admin/users`,        label: t("users"),        emoji: "👤" },
     { href: `/${locale}/admin/referees`,     label: t("referees"),     emoji: "🧑‍⚖️" },
     { href: `/${locale}/admin/courses`,      label: t("courses"),      emoji: "📚", placeholder: true },
-    { href: `/${locale}/admin/users`,        label: t("users"),        emoji: "👤", placeholder: true },
     { href: `/${locale}/admin/clubs`,        label: t("clubs"),        emoji: "🏛️" },
     { href: `/${locale}/admin/suomisport`,   label: t("suomisport"),   emoji: "🔄", placeholder: true },
   ];

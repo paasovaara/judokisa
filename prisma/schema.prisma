@@ -231,6 +231,8 @@ model Competitor {
 
   registeredById   String?
   registeredBy     User?                 @relation("CompetitorRegisteredBy", fields: [registeredById], references: [id])
+  athleteId        String?
+  athlete          User?                 @relation("AthleteCompetitor", fields: [athleteId], references: [id], onDelete: SetNull)
   licenseValid     Boolean?
   ageEligible      Boolean?
   removed          Boolean               @default(false)
@@ -242,6 +244,7 @@ model Competitor {
   @@index([competitionId])
   @@index([lastName, firstName])
   @@index([clubId])
+  @@index([athleteId])
 }
 
 // ---------------------------------------------------------------------------
@@ -264,10 +267,13 @@ model Result {
   ageCategory   String?
   gender        Gender               @default(UNKNOWN)
   placement     Int
+  athleteId     String?
+  athlete       User?                @relation("AthleteResult", fields: [athleteId], references: [id], onDelete: SetNull)
   createdAt     DateTime             @default(now())
 
   @@index([competitionId])
   @@index([lastName, firstName])
+  @@index([athleteId])
 }
 
 // ---------------------------------------------------------------------------
@@ -286,6 +292,10 @@ model Match {
   athlete2Club    String?
   athlete1Score   Int?
   athlete2Score   Int?
+  athlete1Id      String?
+  athlete1        User?                @relation("MatchAthlete1", fields: [athlete1Id], references: [id], onDelete: SetNull)
+  athlete2Id      String?
+  athlete2        User?                @relation("MatchAthlete2", fields: [athlete2Id], references: [id], onDelete: SetNull)
   winnerSide      Int?
   category        CompetitionCategory? @relation(fields: [categoryId], references: [id])
   categoryId      String?
@@ -296,6 +306,8 @@ model Match {
   @@index([competitionId])
   @@index([athlete1Last, athlete1First])
   @@index([athlete2Last, athlete2First])
+  @@index([athlete1Id])
+  @@index([athlete2Id])
 }
 
 // ---------------------------------------------------------------------------
@@ -331,6 +343,10 @@ model User {
   judoShiaiCompetitions        Competition[]                  @relation("JudoShiaiOperator")
   videoOperatedCompetitions    Competition[]                  @relation("VideoOperator")
   registeredCompetitors        Competitor[]                   @relation("CompetitorRegisteredBy")
+  competitorEntries            Competitor[]                   @relation("AthleteCompetitor")
+  competitionResults           Result[]                       @relation("AthleteResult")
+  matchesAsAthlete1            Match[]                        @relation("MatchAthlete1")
+  matchesAsAthlete2            Match[]                        @relation("MatchAthlete2")
   refereeInvitations           CompetitionRefereeInvitation[]
 
   createdAt DateTime @default(now())

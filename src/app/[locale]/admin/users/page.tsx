@@ -4,20 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { fullName } from "@/lib/format";
 import UsersFilters from "./UsersFilters";
-import { ROLE_KEYS, type RoleKey } from "./roles";
-
-const ROLE_BADGE_LABEL: Record<RoleKey, string> = {
-  isAdministrator: "Admin",
-  isCommission: "Commission",
-  isCoordinator: "Coordinator",
-  isCompetitionManager: "Manager",
-  isCompetitionAssistant: "Assistant",
-  isCompetitionResponsible: "Responsible",
-  isCourseInstructor: "Instructor",
-  isReferee: "Referee",
-  isJudoShiaiOperator: "JudoShiai",
-  isVideoOperator: "Video",
-};
+import { ROLE_KEYS, ROLE_BADGE_LABEL, type RoleKey } from "./roles";
 
 export default async function AdminUsersPage({
   params,

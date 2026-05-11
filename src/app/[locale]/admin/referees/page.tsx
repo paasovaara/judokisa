@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/db";
 import { fullName } from "@/lib/format";
+import { ROLE_KEYS, ROLE_BADGE_LABEL, type RoleKey } from "../users/roles";
 
 export default async function AdminRefereesPage({
   params,
@@ -16,18 +17,13 @@ export default async function AdminRefereesPage({
     firstName: string;
     lastName: string;
     email: string;
-    profile: {
-      isReferee: boolean;
-      isAdministrator: boolean;
-      isCommission: boolean;
-      isCoordinator: boolean;
-      isCompetitionManager: boolean;
-      isCompetitionAssistant: boolean;
-      isCourseInstructor: boolean;
-      geographicArea: string | null;
-      refereeLicenseLevel: string | null;
-      active: boolean;
-    } | null;
+    profile:
+      | (Record<RoleKey, boolean> & {
+          geographicArea: string | null;
+          refereeLicenseLevel: string | null;
+          active: boolean;
+        })
+      | null;
   }> = [];
   try {
     users = await prisma.user.findMany({
@@ -37,9 +33,19 @@ export default async function AdminRefereesPage({
         id: true, firstName: true, lastName: true, email: true,
         profile: {
           select: {
-            isReferee: true, isAdministrator: true, isCommission: true, isCoordinator: true,
-            isCompetitionManager: true, isCompetitionAssistant: true, isCourseInstructor: true,
-            geographicArea: true, refereeLicenseLevel: true, active: true,
+            isAdministrator: true,
+            isCommission: true,
+            isCoordinator: true,
+            isCompetitionManager: true,
+            isCompetitionAssistant: true,
+            isCompetitionResponsible: true,
+            isCourseInstructor: true,
+            isReferee: true,
+            isJudoShiaiOperator: true,
+            isVideoOperator: true,
+            geographicArea: true,
+            refereeLicenseLevel: true,
+            active: true,
           },
         },
       },
@@ -49,15 +55,7 @@ export default async function AdminRefereesPage({
   }
 
   function badges(p: NonNullable<typeof users[number]["profile"]>): string[] {
-    const out: string[] = [];
-    if (p.isAdministrator) out.push("Admin");
-    if (p.isCommission) out.push("Commission");
-    if (p.isCoordinator) out.push("Coordinator");
-    if (p.isCompetitionManager) out.push("Manager");
-    if (p.isCompetitionAssistant) out.push("Assistant");
-    if (p.isCourseInstructor) out.push("Instructor");
-    if (p.isReferee) out.push("Referee");
-    return out;
+    return ROLE_KEYS.filter((k) => p[k]).map((k) => ROLE_BADGE_LABEL[k]);
   }
 
   return (
@@ -99,8 +97,21 @@ export default async function AdminRefereesPage({
                   <td className="py-2.5 pr-3 text-gray-600">{u.email}</td>
                   <td className="py-2.5 pr-3 text-gray-600">{u.profile?.geographicArea ?? "—"}</td>
                   <td className="py-2.5 pr-3 text-gray-600">{u.profile?.refereeLicenseLevel ?? "—"}</td>
-                  <td className="py-2.5 pr-4 text-xs">
-                    {u.profile ? badges(u.profile).join(" · ") : "—"}
+                  <td className="py-2.5 pr-4">
+                    {u.profile && badges(u.profile).length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {badges(u.profile).map((b) => (
+                          <span
+                            key={b}
+                            className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
+                          >
+                            {b}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-400">—</span>
+                    )}
                   </td>
                 </tr>
               ))}

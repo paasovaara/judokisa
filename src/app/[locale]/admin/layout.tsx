@@ -19,7 +19,7 @@ export default async function AdminLayout({
     { href: `/${locale}/admin/referees`,     label: t("referees"),     emoji: "🧑‍⚖️" },
     { href: `/${locale}/admin/courses`,      label: t("courses"),      emoji: "📚", placeholder: true },
     { href: `/${locale}/admin/users`,        label: t("users"),        emoji: "👤", placeholder: true },
-    { href: `/${locale}/admin/clubs`,        label: t("clubs"),        emoji: "🏛️", placeholder: true },
+    { href: `/${locale}/admin/clubs`,        label: t("clubs"),        emoji: "🏛️" },
     { href: `/${locale}/admin/suomisport`,   label: t("suomisport"),   emoji: "🔄", placeholder: true },
   ];
 

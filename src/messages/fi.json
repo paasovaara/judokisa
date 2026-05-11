@@ -131,6 +131,24 @@
         "results_url": "Tulos-URL"
       }
     },
+    "clubs": {
+      "title": "Seurat",
+      "new": "Uusi seura",
+      "edit": "Muokkaa",
+      "delete": "Poista",
+      "save": "Tallenna",
+      "cancel": "Peruuta",
+      "no_clubs": "Ei seuroja vielä.",
+      "delete_confirm": "Poistetaanko tämä seura? Tätä ei voi peruuttaa.",
+      "delete_blocked": "Tähän seuraan on liitetty kilpailijoita tai tuloksia, joten sitä ei voi poistaa.",
+      "competitors_count": "Kilpailijat",
+      "results_count": "Tulokset",
+      "form": {
+        "display_name": "Nimi",
+        "country": "Maa",
+        "suomi_sport_name": "SuomiSport-nimi"
+      }
+    },
     "categories": {
       "title": "Sarjat",
       "new": "Uusi sarja",

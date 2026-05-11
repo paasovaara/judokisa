@@ -131,6 +131,24 @@
         "results_url": "Results URL"
       }
     },
+    "clubs": {
+      "title": "Clubs",
+      "new": "New club",
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save",
+      "cancel": "Cancel",
+      "no_clubs": "No clubs yet.",
+      "delete_confirm": "Delete this club? This cannot be undone.",
+      "delete_blocked": "This club has competitors or results linked to it and cannot be deleted.",
+      "competitors_count": "Competitors",
+      "results_count": "Results",
+      "form": {
+        "display_name": "Name",
+        "country": "Country",
+        "suomi_sport_name": "SuomiSport name"
+      }
+    },
     "categories": {
       "title": "Categories",
       "new": "New category",

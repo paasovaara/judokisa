@@ -41,11 +41,18 @@ function pickEnum<T extends readonly string[]>(values: T, raw: string): T[number
 export async function updateOwnProfile(locale: string, form: FormData) {
   const user = await requireCurrentUser(locale);
 
+  // Validate clubId references an actual Club so a hand-crafted form post
+  // can't break the FK with a bogus id.
+  const rawClubId = strOrNull(form, "clubId");
+  const clubId = rawClubId
+    ? ((await prisma.club.findUnique({ where: { id: rawClubId }, select: { id: true } }))?.id ?? null)
+    : null;
+
   const data = {
     phone: strOrNull(form, "phone"),
     dateOfBirth: dateOrNull(form, "dateOfBirth"),
     address: strOrNull(form, "address"),
-    club: strOrNull(form, "club"),
+    clubId,
     geographicArea: pickEnum(AREAS, str(form, "geographicArea")) as GeographicArea | null,
     judoGrade: pickEnum(GRADES, str(form, "judoGrade")) as JudoGrade | null,
     profilePhoto: strOrNull(form, "profilePhoto"),

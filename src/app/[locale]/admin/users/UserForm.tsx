@@ -16,7 +16,7 @@ interface FormDefaults {
   phone?: string | null;
   dateOfBirth?: string | null;
   address?: string | null;
-  club?: string | null;
+  clubId?: string | null;
   geographicArea?: string | null;
   judoGrade?: string | null;
   refereeLicenseLevel?: string | null;
@@ -77,8 +77,14 @@ interface Labels {
   cancel: string;
 }
 
+export interface ClubOption {
+  id: string;
+  displayName: string;
+}
+
 interface Props {
   defaults?: FormDefaults;
+  clubs: ClubOption[];
   action: (form: FormData) => void;
   cancelHref: string;
   labels: Labels;
@@ -99,7 +105,7 @@ const ROLE_FIELDS = [
 
 type RoleField = (typeof ROLE_FIELDS)[number];
 
-export default function UserForm({ defaults = {}, action, cancelHref, labels }: Props) {
+export default function UserForm({ defaults = {}, clubs, action, cancelHref, labels }: Props) {
   const [categoryCode, setCategoryCode] = useState<string>(defaults.defaultCategoryCode ?? "");
   const weightOptions = useMemo(() => {
     const cat = defaultCategoryByCode(categoryCode);
@@ -154,7 +160,14 @@ export default function UserForm({ defaults = {}, action, cancelHref, labels }: 
           </div>
           <div>
             <label className={labelCls}>{labels.club}</label>
-            <input name="club" defaultValue={defaults.club ?? ""} className={inputCls} />
+            <select name="clubId" defaultValue={defaults.clubId ?? ""} className={inputCls}>
+              <option value="">—</option>
+              {clubs.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.displayName}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="sm:col-span-3">
             <label className={labelCls}>{labels.address}</label>

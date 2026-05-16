@@ -8,7 +8,7 @@ interface FormDefaults {
   lastName?: string;
   phone?: string | null;
   address?: string | null;
-  club?: string | null;
+  clubId?: string | null;
   geographicArea?: string | null;
   judoGrade?: string | null;
   refereeLicenseLevel?: string | null;
@@ -34,8 +34,14 @@ const LICENSES = ["D", "C", "B", "A", "INT_B", "INT_A"];
 const inputCls = "w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-primary focus:outline-none";
 const labelCls = "mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500";
 
+export interface ClubOption {
+  id: string;
+  displayName: string;
+}
+
 interface Props {
   defaults?: FormDefaults;
+  clubs: ClubOption[];
   action: (form: FormData) => void;
   cancelHref: string;
   saveLabel: string;
@@ -55,7 +61,7 @@ const ROLE_FIELDS = [
   ["isVideoOperator", "Video operator"],
 ] as const;
 
-export default function RefereeForm({ defaults = {}, action, cancelHref, saveLabel, cancelLabel }: Props) {
+export default function RefereeForm({ defaults = {}, clubs, action, cancelHref, saveLabel, cancelLabel }: Props) {
   return (
     <form action={action} className="space-y-6">
       {/* Identity */}
@@ -85,8 +91,15 @@ export default function RefereeForm({ defaults = {}, action, cancelHref, saveLab
       {/* Affiliation */}
       <fieldset className="grid gap-4 sm:grid-cols-4">
         <div>
-          <label className={labelCls}>Club (free-text)</label>
-          <input name="club" defaultValue={defaults.club ?? ""} className={inputCls} />
+          <label className={labelCls}>Club</label>
+          <select name="clubId" defaultValue={defaults.clubId ?? ""} className={inputCls}>
+            <option value="">—</option>
+            {clubs.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.displayName}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
           <label className={labelCls}>Geographic area</label>

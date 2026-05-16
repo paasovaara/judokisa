@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { prisma } from "@/lib/db";
 import { requireCurrentUser } from "@/lib/session";
 import { fullName } from "@/lib/format";
 import ProfileForm from "./ProfileForm";
@@ -19,7 +20,7 @@ export default async function ProfileEditPage({
     phone: p?.phone ?? null,
     dateOfBirth: p?.dateOfBirth ? p.dateOfBirth.toISOString().slice(0, 10) : null,
     address: p?.address ?? null,
-    club: p?.club ?? null,
+    clubId: p?.clubId ?? null,
     geographicArea: p?.geographicArea ?? null,
     judoGrade: p?.judoGrade ?? null,
     profilePhoto: p?.profilePhoto ?? null,
@@ -27,6 +28,11 @@ export default async function ProfileEditPage({
     defaultWeightClass: p?.defaultWeightClass ?? null,
     gdprNoSync: p?.gdprNoSync ?? false,
   };
+
+  const clubs = await prisma.club.findMany({
+    orderBy: { displayName: "asc" },
+    select: { id: true, displayName: true },
+  });
 
   const labels = {
     locale,
@@ -74,6 +80,7 @@ export default async function ProfileEditPage({
 
       <ProfileForm
         defaults={defaults}
+        clubs={clubs}
         action={updateOwnProfile.bind(null, locale)}
         cancelHref={`/${locale}/profile`}
         labels={labels}

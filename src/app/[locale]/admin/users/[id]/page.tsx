@@ -34,6 +34,10 @@ export default async function EditUserPage({
 
   const t = await getTranslations({ locale, namespace: "admin.users" });
   const labels = await buildUserFormLabels(locale);
+  const clubs = await prisma.club.findMany({
+    orderBy: { displayName: "asc" },
+    select: { id: true, displayName: true },
+  });
 
   async function update(form: FormData) {
     "use server";
@@ -74,6 +78,7 @@ export default async function EditUserPage({
         action={update}
         cancelHref={`/${locale}/admin/users`}
         labels={labels}
+        clubs={clubs}
         defaults={{
           email: user.email,
           firstName: user.firstName,
@@ -81,7 +86,7 @@ export default async function EditUserPage({
           phone: user.profile?.phone ?? null,
           dateOfBirth: dob,
           address: user.profile?.address ?? null,
-          club: user.profile?.club ?? null,
+          clubId: user.profile?.clubId ?? null,
           geographicArea: user.profile?.geographicArea ?? null,
           judoGrade: user.profile?.judoGrade ?? null,
           refereeLicenseLevel: user.profile?.refereeLicenseLevel ?? null,

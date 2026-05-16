@@ -23,7 +23,7 @@ export async function getCurrentUser() {
   try {
     return await prisma.user.findUnique({
       where: { id },
-      include: { profile: true },
+      include: { profile: { include: { club: true } } },
     });
   } catch {
     return null;

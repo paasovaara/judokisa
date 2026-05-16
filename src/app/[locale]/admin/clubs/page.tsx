@@ -15,7 +15,7 @@ export default async function AdminClubsListPage({
     displayName: string;
     country: string;
     suomiSportName: string | null;
-    _count: { competitors: number; results: number };
+    _count: { competitors: number; userProfiles: number };
   }> = [];
   try {
     clubs = await prisma.club.findMany({
@@ -25,7 +25,7 @@ export default async function AdminClubsListPage({
         displayName: true,
         country: true,
         suomiSportName: true,
-        _count: { select: { competitors: true, results: true } },
+        _count: { select: { competitors: true, userProfiles: true } },
       },
     });
   } catch {
@@ -54,8 +54,8 @@ export default async function AdminClubsListPage({
                 <th className="py-2.5 pl-4 pr-3">{t("form.display_name")}</th>
                 <th className="py-2.5 pr-3">{t("form.country")}</th>
                 <th className="py-2.5 pr-3">{t("form.suomi_sport_name")}</th>
-                <th className="py-2.5 pr-3">{t("competitors_count")}</th>
-                <th className="py-2.5 pr-4">{t("results_count")}</th>
+                <th className="py-2.5 pr-3">{t("members_count")}</th>
+                <th className="py-2.5 pr-4">{t("competitors_count")}</th>
               </tr>
             </thead>
             <tbody>
@@ -71,8 +71,8 @@ export default async function AdminClubsListPage({
                   </td>
                   <td className="py-2.5 pr-3 text-gray-600">{c.country}</td>
                   <td className="py-2.5 pr-3 text-gray-500">{c.suomiSportName ?? "—"}</td>
-                  <td className="py-2.5 pr-3 text-gray-600">{c._count.competitors}</td>
-                  <td className="py-2.5 pr-4 text-gray-600">{c._count.results}</td>
+                  <td className="py-2.5 pr-3 text-gray-600">{c._count.userProfiles}</td>
+                  <td className="py-2.5 pr-4 text-gray-600">{c._count.competitors}</td>
                 </tr>
               ))}
             </tbody>

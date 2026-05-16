@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { prisma } from "@/lib/db";
 import UserForm from "../UserForm";
 import { createUser } from "../actions";
 import { buildUserFormLabels } from "../labels";
@@ -12,6 +13,10 @@ export default async function NewUserPage({
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "admin.users" });
   const labels = await buildUserFormLabels(locale);
+  const clubs = await prisma.club.findMany({
+    orderBy: { displayName: "asc" },
+    select: { id: true, displayName: true },
+  });
 
   async function action(form: FormData) {
     "use server";
@@ -31,6 +36,7 @@ export default async function NewUserPage({
         action={action}
         cancelHref={`/${locale}/admin/users`}
         labels={labels}
+        clubs={clubs}
       />
     </div>
   );

@@ -192,12 +192,13 @@ model CompetitionCategory {
 // ---------------------------------------------------------------------------
 
 model Club {
-  id             String       @id @default(cuid())
-  displayName    String       @unique
-  country        String       @default("FIN")
+  id             String        @id @default(cuid())
+  displayName    String        @unique
+  country        String        @default("FIN")
   suomiSportName String?
   competitors    Competitor[]
   results        Result[]
+  userProfiles   UserProfile[]
 }
 
 // ---------------------------------------------------------------------------
@@ -372,7 +373,8 @@ model UserProfile {
   phone                    String?
   dateOfBirth              DateTime?
   address                  String?
-  club                     String?
+  clubId                   String?
+  club                     Club?                @relation(fields: [clubId], references: [id], onDelete: SetNull)
   geographicArea           GeographicArea?
   judoGrade                JudoGrade?
   refereeLicenseLevel      RefereeLicenseLevel?

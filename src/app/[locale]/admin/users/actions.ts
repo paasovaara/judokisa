@@ -44,7 +44,7 @@ function buildUserData(form: FormData) {
   };
 }
 
-function buildProfileData(form: FormData) {
+async function buildProfileData(form: FormData) {
   const area = pickEnum(AREAS, str(form, "geographicArea"));
   const grade = pickEnum(GRADES, str(form, "judoGrade"));
   const license = pickEnum(LICENSES, str(form, "refereeLicenseLevel"));
@@ -53,12 +53,18 @@ function buildProfileData(form: FormData) {
     ROLE_KEYS.map((k) => [k, bool(form, k)]),
   ) as Record<RoleKey, boolean>;
 
+  // Validate clubId is a real Club; drop unknown ids rather than violating FK.
+  const rawClubId = strOrNull(form, "clubId");
+  const clubId = rawClubId
+    ? ((await prisma.club.findUnique({ where: { id: rawClubId }, select: { id: true } }))?.id ?? null)
+    : null;
+
   return {
     ...roles,
     phone: strOrNull(form, "phone"),
     dateOfBirth: dateOrNull(form, "dateOfBirth"),
     address: strOrNull(form, "address"),
-    club: strOrNull(form, "club"),
+    clubId,
     geographicArea: area as GeographicArea | null,
     judoGrade: grade as JudoGrade | null,
     refereeLicenseLevel: license as RefereeLicenseLevel | null,
@@ -77,7 +83,7 @@ export async function createUser(locale: string, form: FormData) {
   if (!user.email || !user.firstName || !user.lastName) {
     throw new Error("email, firstName, lastName required");
   }
-  const profile = buildProfileData(form);
+  const profile = await buildProfileData(form);
   const created = await prisma.user.create({
     data: { ...user, profile: { create: profile } },
   });
@@ -90,7 +96,7 @@ export async function updateUser(locale: string, id: string, form: FormData) {
   if (!user.email || !user.firstName || !user.lastName) {
     throw new Error("email, firstName, lastName required");
   }
-  const profile = buildProfileData(form);
+  const profile = await buildProfileData(form);
   await prisma.user.update({
     where: { id },
     data: {

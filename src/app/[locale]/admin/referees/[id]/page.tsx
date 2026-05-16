@@ -20,6 +20,10 @@ export default async function EditRefereePage({
 
   const t = await getTranslations({ locale, namespace: "admin.referees" });
   const tComp = await getTranslations({ locale, namespace: "admin.competitions" });
+  const clubs = await prisma.club.findMany({
+    orderBy: { displayName: "asc" },
+    select: { id: true, displayName: true },
+  });
 
   async function update(form: FormData) {
     "use server";
@@ -47,13 +51,14 @@ export default async function EditRefereePage({
         cancelHref={`/${locale}/admin/referees`}
         saveLabel={tComp("save")}
         cancelLabel={tComp("cancel")}
+        clubs={clubs}
         defaults={{
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
           phone: user.profile?.phone ?? null,
           address: user.profile?.address ?? null,
-          club: user.profile?.club ?? null,
+          clubId: user.profile?.clubId ?? null,
           geographicArea: user.profile?.geographicArea ?? null,
           judoGrade: user.profile?.judoGrade ?? null,
           refereeLicenseLevel: user.profile?.refereeLicenseLevel ?? null,

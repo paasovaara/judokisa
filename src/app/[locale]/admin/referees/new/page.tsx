@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { prisma } from "@/lib/db";
 import RefereeForm from "../RefereeForm";
 import { createReferee } from "../actions";
 
@@ -11,6 +12,10 @@ export default async function NewRefereePage({
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "admin.referees" });
   const tComp = await getTranslations({ locale, namespace: "admin.competitions" });
+  const clubs = await prisma.club.findMany({
+    orderBy: { displayName: "asc" },
+    select: { id: true, displayName: true },
+  });
 
   async function action(form: FormData) {
     "use server";
@@ -31,6 +36,7 @@ export default async function NewRefereePage({
         cancelHref={`/${locale}/admin/referees`}
         saveLabel={tComp("save")}
         cancelLabel={tComp("cancel")}
+        clubs={clubs}
       />
     </div>
   );

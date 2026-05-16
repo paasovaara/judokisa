@@ -26,7 +26,7 @@ export default async function CompetitionRefereesPage({
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
       select: {
         id: true, firstName: true, lastName: true, email: true,
-        profile: { select: { geographicArea: true, refereeLicenseLevel: true, club: true } },
+        profile: { select: { geographicArea: true, refereeLicenseLevel: true } },
       },
     }),
     prisma.competitionRefereeInvitation.findMany({
@@ -36,7 +36,7 @@ export default async function CompetitionRefereesPage({
         referee: {
           select: {
             id: true, firstName: true, lastName: true, email: true,
-            profile: { select: { geographicArea: true, refereeLicenseLevel: true, club: true } },
+            profile: { select: { geographicArea: true, refereeLicenseLevel: true } },
           },
         },
       },

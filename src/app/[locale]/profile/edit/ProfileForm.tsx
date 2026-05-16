@@ -15,13 +15,18 @@ interface FormDefaults {
   phone?: string | null;
   dateOfBirth?: string | null;
   address?: string | null;
-  club?: string | null;
+  clubId?: string | null;
   geographicArea?: string | null;
   judoGrade?: string | null;
   profilePhoto?: string | null;
   defaultCategoryCode?: string | null;
   defaultWeightClass?: number | null;
   gdprNoSync?: boolean;
+}
+
+export interface ClubOption {
+  id: string;
+  displayName: string;
 }
 
 const AREAS = ["LOU", "LAN", "POH", "ITA", "KAA", "ETE"];
@@ -56,12 +61,13 @@ interface Labels {
 
 interface Props {
   defaults?: FormDefaults;
+  clubs: ClubOption[];
   action: (form: FormData) => void;
   cancelHref: string;
   labels: Labels;
 }
 
-export default function ProfileForm({ defaults = {}, action, cancelHref, labels }: Props) {
+export default function ProfileForm({ defaults = {}, clubs, action, cancelHref, labels }: Props) {
   const [categoryCode, setCategoryCode] = useState<string>(defaults.defaultCategoryCode ?? "");
   const weightOptions = useMemo(() => {
     const cat = defaultCategoryByCode(categoryCode);
@@ -110,7 +116,14 @@ export default function ProfileForm({ defaults = {}, action, cancelHref, labels 
         <fieldset className="grid gap-4 sm:grid-cols-3">
           <div>
             <label className={labelCls}>{labels.club}</label>
-            <input name="club" defaultValue={defaults.club ?? ""} className={inputCls} />
+            <select name="clubId" defaultValue={defaults.clubId ?? ""} className={inputCls}>
+              <option value="">—</option>
+              {clubs.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.displayName}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className={labelCls}>{labels.geographicArea}</label>

@@ -14,7 +14,9 @@ export default async function EditClubPage({
 
   const club = await prisma.club.findUnique({
     where: { id },
-    include: { _count: { select: { competitors: true, results: true } } },
+    include: {
+      _count: { select: { competitors: true, results: true, userProfiles: true } },
+    },
   });
   if (!club) notFound();
 
@@ -42,9 +44,9 @@ export default async function EditClubPage({
       </Link>
       <h1 className="mb-1 text-2xl font-bold text-gray-900">{club.displayName}</h1>
       <p className="mb-6 text-sm text-gray-500">
-        {t("competitors_count")}: {club._count.competitors}
+        {t("members_count")}: {club._count.userProfiles}
         {" · "}
-        {t("results_count")}: {club._count.results}
+        {t("competitors_count")}: {club._count.competitors}
       </p>
 
       <ClubForm

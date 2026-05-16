@@ -60,7 +60,7 @@ export default async function ProfileOverviewPage({
           {p?.judoGrade && (
             <p className="mt-1 text-sm text-gray-600">
               {judoGradeEmoji(p.judoGrade)} {judoGradeLabel(p.judoGrade)}
-              {p.club ? ` · ${p.club}` : ""}
+              {p.club ? ` · ${p.club.displayName}` : ""}
             </p>
           )}
         </div>

@@ -1,7 +1,6 @@
 {
   "nav": {
     "competitions": "Competitions",
-    "history": "History",
     "admin": "Admin",
     "language": "Language",
     "login": "Login",
@@ -90,8 +89,7 @@
     "hero_subtitle": "Competitions, results and video streams",
     "upcoming_title": "Upcoming competitions",
     "results_title": "Latest results",
-    "view_all": "View all",
-    "search_placeholder": "Search competitor..."
+    "view_all": "View all"
   },
   "competitions": {
     "title": "Competitions",
@@ -131,24 +129,6 @@
     "no_matches": "No matches available",
     "no_feeds": "No video feeds available",
     "registered_count": "Registered athletes"
-  },
-  "history": {
-    "title": "Competitor history",
-    "description": "Look up a competitor's result history or head-to-head record between two competitors.",
-    "athlete1_placeholder": "Competitor 1 (first and last name)",
-    "athlete2_placeholder": "Competitor 2 (optional, for head-to-head)",
-    "search": "Search",
-    "no_results": "No results found for",
-    "competition": "Competition",
-    "date": "Date",
-    "city": "City",
-    "category": "Category",
-    "placement": "Placement",
-    "vs": "vs",
-    "score": "Score",
-    "winner": "Winner",
-    "placements_tab": "Placements",
-    "matches_tab": "Matches"
   },
   "types": {
     "TOURNAMENT": "Tournament",

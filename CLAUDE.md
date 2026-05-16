@@ -49,7 +49,6 @@ Future: a CMS will replace the scraper; auth/registration will be added as a sep
 /[locale]/                          → Home (hero, upcoming, latest results)
 /[locale]/competitions              → Competition list (filterable, paginated)
 /[locale]/competitions/[slug]       → Competition detail (info, results, video)
-/[locale]/history                   → Competitor history / head-to-head search
 ```
 
 Routes are server components that query Prisma directly. Client components are co-located and named `*Filters.tsx` / `*Search.tsx`.

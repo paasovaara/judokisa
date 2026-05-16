@@ -1,7 +1,6 @@
 {
   "nav": {
     "competitions": "Kilpailut",
-    "history": "Historia",
     "admin": "Hallinta",
     "language": "Kieli",
     "login": "Kirjaudu",
@@ -90,8 +89,7 @@
     "hero_subtitle": "Kilpailut, tulokset ja videolähetykset",
     "upcoming_title": "Tulevat kilpailut",
     "results_title": "Viimeisimmät tulokset",
-    "view_all": "Näytä kaikki",
-    "search_placeholder": "Hae kilpailija..."
+    "view_all": "Näytä kaikki"
   },
   "competitions": {
     "title": "Kilpailut",
@@ -131,24 +129,6 @@
     "no_matches": "Ei otteluita saatavilla",
     "no_feeds": "Ei videolähetyksiä saatavilla",
     "registered_count": "Ilmoittautuneita"
-  },
-  "history": {
-    "title": "Kilpailuhistoria",
-    "description": "Hae kilpailijan tuloshistoria tai kahden kilpailijan keskinäiset kohtaamiset.",
-    "athlete1_placeholder": "Kilpailija 1 (etu- ja sukunimi)",
-    "athlete2_placeholder": "Kilpailija 2 (valinnainen, keskinäiset kohtaamiset)",
-    "search": "Hae",
-    "no_results": "Ei tuloksia hakusanalla",
-    "competition": "Kilpailu",
-    "date": "Päivämäärä",
-    "city": "Kaupunki",
-    "category": "Sarja",
-    "placement": "Sija",
-    "vs": "vastaan",
-    "score": "Tulos",
-    "winner": "Voittaja",
-    "placements_tab": "Sijoitukset",
-    "matches_tab": "Ottelut"
   },
   "types": {
     "TOURNAMENT": "Turnaus",

@@ -23,7 +23,6 @@ export default function NavbarClient({ currentUser }: { currentUser: SessionUser
 
   const navLinks: Array<{ href: string; label: string }> = [
     { href: `/${locale}/competitions`, label: t("competitions") },
-    { href: `/${locale}/history`, label: t("history") },
     { href: `/${locale}/admin`, label: t("admin") },
   ];
   if (currentUser) {

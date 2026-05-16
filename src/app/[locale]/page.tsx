@@ -89,12 +89,6 @@ export default async function HomePage({
             >
               {t("upcoming_title")} →
             </Link>
-            <Link
-              href={`/${locale}/history`}
-              className="rounded-lg border border-blue-300/50 px-6 py-3 text-sm font-semibold text-blue-100 transition-colors hover:border-white hover:text-white"
-            >
-              {t("search_placeholder")}
-            </Link>
           </div>
         </div>
       </section>

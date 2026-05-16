@@ -18,9 +18,6 @@ export default function Footer() {
               <Link href={`/${locale}/competitions`} className="hover:text-white">
                 {locale === "fi" ? "Kilpailut" : "Competitions"}
               </Link>
-              <Link href={`/${locale}/history`} className="hover:text-white">
-                {locale === "fi" ? "Historia" : "History"}
-              </Link>
             </div>
             <p className="text-xs opacity-50">{t("data_source")}</p>
           </div>

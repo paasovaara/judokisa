@@ -719,7 +719,6 @@ model SuomiSportGrantedMerit {
 | `/competitions/[slug]/results.txt` | Press results | `text/plain`, no login |
 | `/competitions/[slug]/register` | Registration | Individual / kata-pair / team forms based on competition level |
 | `/api/competitions/[slug]/tabs` | Tab data API | JSON; client-side cache source |
-| `/history` | Competitor history / head-to-head | |
 | `/athletes` | Athletes index | Aggregate athlete view |
 | `/rankings/samurai-cup/[year]` | Samurai Cup standings | Generated on demand |
 
@@ -805,15 +804,9 @@ Tab data fetched once via `/api/competitions/[slug]/tabs` on layout mount, store
 - Non-YouTube URL → styled link button instead of iframe
 - Empty state when no feeds available
 
-### 6.6 Competitor history (`/history`)
-- Search input for athlete name (first + last)
-- Optional second athlete name for head-to-head view
-- Single athlete: competition history table (competition, date, city, category, placement)
-- Head-to-head: all matches between the two athletes (competition, date, score, winner)
-
 ### 6.7 Admin section (`/admin`)
 
-All management functionality is exposed through **one** top-level navigation entry in the global header — labelled **"Admin"** (en) / **"Hallinta"** (fi). Everything reachable only by authenticated managers, coordinators, instructors, commission members, or administrators lives behind this single entry; the public marketing-style nav (Home, Competitions, History) is unaffected by login state.
+All management functionality is exposed through **one** top-level navigation entry in the global header — labelled **"Admin"** (en) / **"Hallinta"** (fi). Everything reachable only by authenticated managers, coordinators, instructors, commission members, or administrators lives behind this single entry; the public marketing-style nav (Home, Competitions) is unaffected by login state.
 
 **Visibility of the entry itself.** The "Admin / Hallinta" entry is rendered in the global header **only when the current user holds at least one admin-relevant role flag** on their `UserProfile` (§5.10) — `isAdministrator`, `isCommission`, `isCoordinator`, `isCompetitionManager`, `isCompetitionAssistant`, `isCompetitionResponsible`, or `isCourseInstructor`. Anonymous visitors and authenticated registrants without admin roles never see it.
 
@@ -844,7 +837,6 @@ If a user has access to only one subnav item, that item's page is the default la
 - Core Web Vitals targets: LCP < 2.5 s, CLS < 0.1, INP < 200 ms
 - Competition detail layout and Information tab statically generated (`generateStaticParams`)
 - Tab content (athletes, matches, results, livestreams) rendered client-side from cached API response — instant tab switching after first load
-- History search server-rendered on demand
 - Public competition / results pages cacheable (high read volume, infrequent writes)
 - SuomiSport background syncs must not block UI
 
@@ -1271,9 +1263,6 @@ Records the resolution of the 23 conflicts identified during the merge from the 
 │   │       │       ├── results/page.tsx
 │   │       │       └── livestreams/page.tsx
 │   │       ├── athletes/[id]/                  # Athlete deep-dive (derived from Competitor/Result)
-│   │       ├── history/                        # Public head-to-head search
-│   │       │   ├── page.tsx
-│   │       │   └── HistorySearch.tsx
 │   │       └── admin/                          # All management surfaces (§6.7)
 │   │           ├── layout.tsx                  # Role-filtered subnav
 │   │           ├── page.tsx                    # Landing page

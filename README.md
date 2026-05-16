@@ -1,6 +1,6 @@
 # JudoKisa
 
-Mobile-first web platform for Finnish judo competitions — results, video feeds, and competitor history.
+Mobile-first web platform for Finnish judo competitions — results and video feeds.
 
 See [`docs/spec.md`](./docs/spec.md) for the full application specification.
 

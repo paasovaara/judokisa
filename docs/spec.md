@@ -1,10 +1,10 @@
 # Judo Competition Platform — Application Specification
 
-**Version:** 0.5.0 (decisions resolved — target spec)
-**Status:** Draft — implementation-ready
-**Last updated:** 2026-05-10
+**Version:** 0.6.0 (athlete FK + UserProfile.club FK + mock-auth scaffold)
+**Status:** Draft — implementation in progress
+**Last updated:** 2026-05-16
 
-> **How to read this document.** This is the **target specification** for the merged judo competition platform. It supersedes the previous draft of `spec.md` (which described only the v1 read-only frontend) and the legacy `docs/specifications.md`. The 23 conflicts identified during the merge have been resolved; resolutions are recorded in the **Decision Log** (§12) for traceability. The current Prisma schema (`prisma/schema.prisma`) is a subset of the target schema; we will drop and recreate the database when migrating to this target.
+> **How to read this document.** This is the **target specification** for the merged judo competition platform. It supersedes the previous draft of `spec.md` (which described only the v1 read-only frontend) and the legacy `docs/legacy-specifications.md`. The 25 decisions made during the merge and ongoing implementation are recorded in the **Decision Log** (§12) for traceability. The current Prisma schema (`prisma/schema.prisma`) is being evolved toward this target through standard Prisma migrations — earlier plans to drop-and-recreate the database have been dropped in favour of preserving live data.
 
 ---
 
@@ -286,6 +286,8 @@ The default category set (M, M21, P18, P15, P13, P11, N, N21, T18, T15, T13, T11
 
 Names are split (D8 / D16 / D22). Phone/email/yearOfBirth/categoryId are required in the in-platform registration form but kept optional at the DB level so the interim scraper can populate rows without them. The application layer enforces "required for in-platform registration" via validation.
 
+`athleteId` (D24) is the optional FK to the `User` who is the actual person competing — distinct from `registeredById`, which is the user who *entered* the registration (a coach, club rep, or the athlete themselves). The duplicated name / club / weight fields stay populated so historical rows remain readable when a person changes name, switches club, or is later deleted (`onDelete: SetNull`).
+
 ```prisma
 model Competitor {
   id               String                @id @default(cuid())
@@ -319,8 +321,10 @@ model Competitor {
   judoGrade        JudoGrade?
 
   // Registration metadata
-  registeredById   String?               // FK → User
+  registeredById   String?               // FK → User (who entered the registration)
   registeredBy     User?                 @relation("CompetitorRegisteredBy", fields: [registeredById], references: [id])
+  athleteId        String?               // FK → User (the person actually competing); nullable, SetNull
+  athlete          User?                 @relation("AthleteCompetitor", fields: [athleteId], references: [id], onDelete: SetNull)
   licenseValid     Boolean?              // null = not yet checked
   ageEligible      Boolean?              // null = not yet checked
   removed          Boolean               @default(false)
@@ -332,6 +336,7 @@ model Competitor {
   @@index([competitionId])
   @@index([lastName, firstName])
   @@index([clubId])
+  @@index([athleteId])
 }
 
 enum Gender { MALE FEMALE UNKNOWN }
@@ -346,16 +351,19 @@ enum JudoGrade {
 
 ```prisma
 model Club {
-  id             String       @id @default(cuid())
-  displayName    String       @unique
-  country        String       @default("FIN")
-  suomiSportName String?                   // null if no SuomiSport mapping
+  id             String        @id @default(cuid())
+  displayName    String        @unique
+  country        String        @default("FIN")
+  suomiSportName String?                    // null if no SuomiSport mapping
   competitors    Competitor[]
   results        Result[]
+  userProfiles   UserProfile[]              // members — UserProfile.clubId references
 }
 ```
 
 140 Finnish clubs are pre-seeded — see `docs/appendix-clubs.md`. 21 of those have no SuomiSport mapping.
+
+The admin clubs list (`/admin/clubs`) shows two count columns sourced from the back-relations: **Members** = `_count.userProfiles` (registered users who have selected this club on their profile) and **Entries** = `_count.competitors` (competition entries linked to this club — per-competition, not per-person, so a single person entering five competitions counts as five).
 
 ### 5.5 Result
 
@@ -378,10 +386,13 @@ model Result {
   ageCategory   String?      // category code (e.g. "T15") — also derivable via category.code
   gender        Gender
   placement     Int          // 1, 2, 3, 5, 7… (ties share a number)
+  athleteId     String?      // FK → User; nullable, SetNull — preserves name fields when user deleted (D24)
+  athlete       User?        @relation("AthleteResult", fields: [athleteId], references: [id], onDelete: SetNull)
   createdAt     DateTime     @default(now())
 
   @@index([competitionId])
   @@index([lastName, firstName])
+  @@index([athleteId])
 }
 ```
 
@@ -402,6 +413,10 @@ model Match {
   athlete2Club    String?
   athlete1Score   Int?
   athlete2Score   Int?
+  athlete1Id      String?      // FK → User; nullable, SetNull (D24)
+  athlete1        User?        @relation("MatchAthlete1", fields: [athlete1Id], references: [id], onDelete: SetNull)
+  athlete2Id      String?
+  athlete2        User?        @relation("MatchAthlete2", fields: [athlete2Id], references: [id], onDelete: SetNull)
   winnerSide      Int?         // 1 or 2 (denormalised for display)
   category        CompetitionCategory? @relation(fields: [categoryId], references: [id])
   categoryId      String?
@@ -412,6 +427,8 @@ model Match {
   @@index([competitionId])
   @@index([athlete1Last, athlete1First])
   @@index([athlete2Last, athlete2First])
+  @@index([athlete1Id])
+  @@index([athlete2Id])
 }
 ```
 
@@ -510,11 +527,27 @@ model User {
   firstName String
   lastName  String
   profile   UserProfile?
-  registeredCompetitors        Competitor[]   @relation("CompetitorRegisteredBy")
-  registeredTeams              TeamEntry[]    @relation("TeamRegisteredBy")
+
+  // Staff assignments on competitions
+  responsibleForCompetitions   Competition[]                  @relation("ResponsibleUser")
+  managedCompetitions          Competition[]                  @relation("CompetitionManager")
+  assistedCompetitions         Competition[]                  @relation("CompetitionAssistant")
+  judoShiaiCompetitions        Competition[]                  @relation("JudoShiaiOperator")
+  videoOperatedCompetitions    Competition[]                  @relation("VideoOperator")
+
+  // Athlete history (FKs from competition records — D24)
+  competitorEntries            Competitor[]                   @relation("AthleteCompetitor")
+  competitionResults           Result[]                       @relation("AthleteResult")
+  matchesAsAthlete1            Match[]                        @relation("MatchAthlete1")
+  matchesAsAthlete2            Match[]                        @relation("MatchAthlete2")
+
+  // Other relations
+  registeredCompetitors        Competitor[]                   @relation("CompetitorRegisteredBy")
+  registeredTeams              TeamEntry[]                    @relation("TeamRegisteredBy")
   refereeInvitations           CompetitionRefereeInvitation[]
   instructedCourses            CourseInstructor[]
   attendedCourses              CourseParticipant[]
+
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 }
@@ -540,7 +573,8 @@ model UserProfile {
   phone                    String?
   dateOfBirth              DateTime?
   address                  String?
-  club                     String?               // free-text — referees may belong to non-listed clubs
+  clubId                   String?               // FK → Club (D25); free-text representation removed
+  club                     Club?                 @relation(fields: [clubId], references: [id], onDelete: SetNull)
   geographicArea           GeographicArea?
   judoGrade                JudoGrade?
   refereeLicenseLevel      RefereeLicenseLevel?
@@ -695,9 +729,15 @@ The full set of authenticated routes is listed below. The user-facing **navigati
 
 | Route | Roles | Purpose |
 |---|---|---|
-| `/auth/login`, `/auth/register`, `/auth/reset-password`, `/auth/callback/[provider]` | Public | Auth flows |
-| `/profile` | Any authenticated | Edit own profile, view referee history & courses |
-| `/profile/invitations` | Referee | Pending referee invitations (accept / decline) |
+| `/auth/login`, `/auth/register`, `/auth/reset-password`, `/auth/callback/[provider]` | Public | Real auth flows (planned — §8.1) |
+| `/login` | Public | **Mock-login picker** (interim, dev-only — see §8.1). Pick an existing DB user to "log in as" via a cookie; replaced by real auth above. |
+| `/profile` | Any authenticated | Overview: counts of results / matches / referee jobs / registrations, role badges, quick links |
+| `/profile/edit` | Any authenticated | Self-edit profile — whitelisted fields only (phone, DOB, address, club, area, grade, photo URL, default category/weight, `gdprNoSync`). Roles and license level stay admin-only. |
+| `/profile/history` | Any authenticated | Athlete history — competition results (by `Result.athleteId`) |
+| `/profile/history/matches` | Any authenticated | Match head-to-heads (by `Match.athlete1Id` / `athlete2Id`) |
+| `/profile/history/referee` | Any authenticated (referee) | Referee invitations history (by `CompetitionRefereeInvitation.refereeId`) |
+| `/profile/history/registrations` | Any authenticated | Competitors this user registered (by `Competitor.registeredById`) |
+| `/profile/invitations` | Referee | Pending referee invitations (accept / decline) — planned |
 | `/admin` | Any user with an admin-relevant role | Landing page; subnav-driven |
 | `/admin/competitions` | Admin / Commission / Manager / Assistant | Competition management |
 | `/admin/competitions/[id]/referees` | Manager / Assistant / Responsible | Invite referees, mark attendance |
@@ -864,11 +904,21 @@ If a user has access to only one subnav item, that item's page is the default la
 These features are not yet implemented in the codebase. They are listed here in implementation-order intent (no fixed dates).
 
 ### 8.1 User accounts, roles, and authentication
+
+**Currently implemented — mock-auth scaffold** (interim, dev-only):
+- Cookie-based mock session (`mockUserId` httpOnly cookie); helpers in `src/lib/session.ts` (`getCurrentUser`, `requireCurrentUser`).
+- `/login` page lists existing DB users; clicking "Log in as" sets the cookie. Logout clears it.
+- `/profile/*` pages (overview, edit, history) read the session and operate on the picked user's real DB rows.
+- Profile-edit server actions whitelist the user-editable subset of `UserProfile` fields so a hand-crafted POST cannot elevate roles or flip status flags.
+
+This scaffold is replaced wholesale by the real auth layer below — `/login` is removed, `/auth/*` flows take over, and `getCurrentUser()` reads the production session.
+
+**Planned — real authentication:**
 - Email + password registration with email verification; password reset
 - Social login: Google, Facebook, GitHub, LinkedIn, Twitter
-- Self-edit profile (contact details, photo, area, grade)
-- Admins create / edit / deactivate / view any user; assign roles (§3)
-- GDPR controls: `gdprNoSync` flag (blocks SuomiSport sync), full user-data deletion
+- Self-edit profile (contact details, photo, area, grade) — already implemented against the mock scaffold
+- Admins create / edit / deactivate / view any user; assign roles (§3) — implemented at `/admin/users`
+- GDPR controls: `gdprNoSync` flag (blocks SuomiSport sync) — user-editable on `/profile/edit`; full user-data deletion via admin
 - Blacklist flag prevents specific individuals from using the system
 
 ### 8.2 Competitor registration (individual)
@@ -1152,7 +1202,7 @@ competitions/{competitionId}/registration-attachments/{competitorId}/{filename}
 
 ## 12. Decision Log
 
-Records the resolution of the 23 conflicts identified during the merge from the legacy `docs/specifications.md` into this document. Items are referenced by their original conflict IDs (Cn) and renamed Dn here for "Decision".
+Records the resolution of the 23 conflicts identified during the merge from the legacy `docs/legacy-specifications.md` into this document, plus subsequent decisions taken during implementation. Items are referenced by their original conflict IDs (Cn) and renamed Dn here for "Decision".
 
 | # | Topic | Decision |
 |---|---|---|
@@ -1179,6 +1229,8 @@ Records the resolution of the 23 conflicts identified during the merge from the 
 | **D21** | SFTP usernames | Use slug-based names: `r-{slug}` (results operator) and `v-{slug}` (video operator). Numeric IDs not required. |
 | **D22** | Two name representations on Competitor | Single representation: `firstName` / `lastName` only. No combined `name` field. |
 | **D23** | Document / asset storage | Object storage (Supabase Storage **or** S3) for binary assets — profile photos, future registration attachments, optional video HTML override. Final choice deferred. |
+| **D24** | Athlete FK on competition records | Add optional `athleteId String?` FK (→ `User`, `onDelete: SetNull`) on `Competitor` and `Result`, plus `athlete1Id` / `athlete2Id` on `Match`. Name / club / weight fields stay duplicated on the row so historical lineage survives renames, club moves, or user deletion. Profile history queries (`/profile/history/*`) match by ID rather than free-text name. Scraper-side ID matching is a separate task; legacy rows without `athleteId` simply don't appear in any user's history until linked. |
+| **D25** | UserProfile.club: FK to Club | Replace the previous free-text `club String?` on `UserProfile` with `clubId String?` + `club Club?` relation (`onDelete: SetNull`). The original rationale for free text ("referees may belong to non-listed clubs") is dropped in favour of a clean FK; admins add any missing clubs via `/admin/clubs` instead. The migration backfills the FK from any existing free-text values that match a `Club.displayName` (case-insensitive) before dropping the old column. Affects every form that previously took club as text — profile edit, admin users form, admin referees form — all now use a dropdown sourced from `prisma.club.findMany`. |
 
 ---
 
@@ -1192,6 +1244,22 @@ Records the resolution of the 23 conflicts identified during the merge from the 
 │   │   │   └── competitions/[slug]/tabs/route.ts
 │   │   └── [locale]/
 │   │       ├── page.tsx                        # Home
+│   │       ├── login/                          # Mock-login picker (§8.1 interim)
+│   │       │   ├── page.tsx
+│   │       │   └── actions.ts                  # loginAs / logout server actions
+│   │       ├── profile/                        # Self-service profile (§6.2)
+│   │       │   ├── layout.tsx                  # Tabbed sub-nav (Overview / Edit / History)
+│   │       │   ├── page.tsx                    # Overview dashboard
+│   │       │   ├── edit/
+│   │       │   │   ├── page.tsx
+│   │       │   │   ├── ProfileForm.tsx
+│   │       │   │   └── actions.ts              # Whitelisted updateOwnProfile
+│   │       │   └── history/
+│   │       │       ├── layout.tsx              # Inner tabs (Results / Matches / Referee / Registrations)
+│   │       │       ├── page.tsx                # Results — by Result.athleteId
+│   │       │       ├── matches/page.tsx        # by Match.athlete1Id / athlete2Id
+│   │       │       ├── referee/page.tsx        # by CompetitionRefereeInvitation.refereeId
+│   │       │       └── registrations/page.tsx  # by Competitor.registeredById
 │   │       ├── competitions/
 │   │       │   ├── page.tsx                    # Competition list
 │   │       │   ├── CompetitionFilters.tsx
@@ -1202,25 +1270,40 @@ Records the resolution of the 23 conflicts identified during the merge from the 
 │   │       │       ├── matches/page.tsx
 │   │       │       ├── results/page.tsx
 │   │       │       └── livestreams/page.tsx
-│   │       ├── athletes/
-│   │       └── history/
-│   │           ├── page.tsx
-│   │           └── HistorySearch.tsx
+│   │       ├── athletes/[id]/                  # Athlete deep-dive (derived from Competitor/Result)
+│   │       ├── history/                        # Public head-to-head search
+│   │       │   ├── page.tsx
+│   │       │   └── HistorySearch.tsx
+│   │       └── admin/                          # All management surfaces (§6.7)
+│   │           ├── layout.tsx                  # Role-filtered subnav
+│   │           ├── page.tsx                    # Landing page
+│   │           ├── competitions/{,[id]/{,edit,categories,competitors,matches,referees,results,video-feeds},new}
+│   │           ├── referees/{,[id],new}        # Referee directory + form (UserForm subset)
+│   │           ├── users/{,[id],new}           # User CRUD; UserForm + roles + status
+│   │           └── clubs/{,[id],new}           # Club CRUD; list shows Members & Entries counts
 │   ├── components/
-│   │   ├── Navbar.tsx
+│   │   ├── Navbar.tsx                          # Server shell — reads session
+│   │   ├── NavbarClient.tsx                    # Client — login/logout/profile nav state
 │   │   ├── Footer.tsx
+│   │   ├── AdminSubNav.tsx
+│   │   ├── ProfileSubNav.tsx                   # /profile tab bar
+│   │   ├── ProfileHistoryTabs.tsx              # /profile/history inner tabs
 │   │   ├── CompetitionCard.tsx
 │   │   ├── CompetitionSubNav.tsx
 │   │   ├── CompetitionTabsProvider.tsx
 │   │   ├── CompetitorTable.tsx
+│   │   ├── ResultsTable.tsx
 │   │   ├── Badge.tsx
 │   │   ├── CapacityBar.tsx
-│   │   ├── ResultsTable.tsx
 │   │   ├── SearchInput.tsx
 │   │   └── WinLossBar.tsx
 │   ├── lib/
 │   │   ├── db.ts                               # Prisma singleton (pg adapter)
-│   │   └── competitionTabCache.ts
+│   │   ├── session.ts                          # Mock session helpers
+│   │   ├── profileHistory.ts                   # Athlete-FK queries for /profile/history
+│   │   ├── competitionTabCache.ts
+│   │   ├── categories.ts                       # Default category seed list
+│   │   └── format.ts                           # Name / grade / weight / flag helpers
 │   ├── i18n/
 │   │   ├── routing.ts
 │   │   └── request.ts
@@ -1228,7 +1311,8 @@ Records the resolution of the 23 conflicts identified during the merge from the 
 │       ├── fi.json
 │       └── en.json
 ├── prisma/
-│   └── schema.prisma                           # Shared schema — target spec is §5
+│   ├── schema.prisma                           # Live schema — target spec is §5
+│   └── migrations/                             # Standard Prisma migrations
 ├── scraper/                                    # ⚠ DEPRECATED — interim write path; to be removed (see §2)
 │   ├── src/
 │   │   ├── index.ts
@@ -1238,6 +1322,6 @@ Records the resolution of the 23 conflicts identified during the merge from the 
 └── docs/
     ├── spec.md                                 # This document — main specification
     ├── requirements.md                         # Product requirements (legacy + planned)
-    ├── specifications.md                       # Legacy technical specifications (merge source)
+    ├── legacy-specifications.md                # Legacy technical specifications (merge source)
     └── appendix-clubs.md                       # 140 Finnish judo clubs
 ```

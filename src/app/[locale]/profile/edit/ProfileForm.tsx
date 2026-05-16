@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { useState, useMemo } from "react";
+import type { JudoGrade } from "@prisma/client";
 import {
   DEFAULT_CATEGORIES,
   defaultCategoryByCode,
   allDefaultWeightClasses,
   formatWeightClass,
 } from "@/lib/categories";
+import { judoGradeEmoji, judoGradeLabel } from "@/lib/format";
 
 interface FormDefaults {
   phone?: string | null;
@@ -127,9 +129,15 @@ export default function ProfileForm({ defaults = {}, action, cancelHref, labels 
             <label className={labelCls}>{labels.judoGrade}</label>
             <select name="judoGrade" defaultValue={defaults.judoGrade ?? ""} className={inputCls}>
               <option value="">—</option>
-              {GRADES.map((g) => (
-                <option key={g} value={g}>{g}</option>
-              ))}
+              {GRADES.map((g) => {
+                const emoji = judoGradeEmoji(g as JudoGrade);
+                const text = judoGradeLabel(g as JudoGrade) ?? g;
+                return (
+                  <option key={g} value={g}>
+                    {`${emoji} ${text}`.trim()}
+                  </option>
+                );
+              })}
             </select>
           </div>
         </fieldset>

@@ -123,6 +123,8 @@
       "title": "Perheeni",
       "intro": "Lapset ja muut huollettavat, joita hallinnoit. Voit katsella ja muokata heidän tietojaan.",
       "add_child_button": "+ Lisää lapsi",
+      "add_child_disabled_minor": "Sinun täytyy olla täysi-ikäinen (18 v.) voidaksesi lisätä lapsia.",
+      "add_child_disabled_no_dob": "Lisää syntymäpäiväsi profiiliisi voidaksesi lisätä lapsia.",
       "empty": "Et ole vielä lisännyt lapsia.",
       "managed_by": "Hallinnoijat:",
       "viewing_as_banner": "Tarkastelet käyttäjän {name} profiilia",

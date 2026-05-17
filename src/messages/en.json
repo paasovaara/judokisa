@@ -123,6 +123,8 @@
       "title": "My family",
       "intro": "Children and other dependents you manage. Their data is yours to view and edit.",
       "add_child_button": "+ Add child",
+      "add_child_disabled_minor": "You must be at least 18 years old to add children.",
+      "add_child_disabled_no_dob": "Add your date of birth to your profile to enable this feature.",
       "empty": "You haven't added any children yet.",
       "managed_by": "Managed by:",
       "viewing_as_banner": "Viewing {name}'s profile",

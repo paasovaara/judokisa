@@ -34,6 +34,18 @@ export default async function ProfileOverviewPage({
   const p = user.profile;
   const roles: RoleKey[] = p ? ROLE_KEYS.filter((k) => p[k]) : [];
 
+  const dob = p?.dateOfBirth ?? null;
+  let addChildDisabledReason: string | null = null;
+  if (!dob) {
+    addChildDisabledReason = tFamily("add_child_disabled_no_dob");
+  } else {
+    const eighteenthBirthday = new Date(dob);
+    eighteenthBirthday.setFullYear(eighteenthBirthday.getFullYear() + 18);
+    if (new Date() < eighteenthBirthday) {
+      addChildDisabledReason = tFamily("add_child_disabled_minor");
+    }
+  }
+
   const stats = [
     { label: t("stat_results"),       value: resultsCount,        href: `/${locale}/profile/history` },
     { label: t("stat_matches"),       value: matchesCount,        href: `/${locale}/profile/history/matches` },
@@ -124,12 +136,26 @@ export default async function ProfileOverviewPage({
       <section className="mt-10 border-t border-gray-200 pt-8">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">{tFamily("title")}</h2>
-          <Link
-            href={`/${locale}/profile/dependents/new`}
-            className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90"
-          >
-            {tFamily("add_child_button")}
-          </Link>
+          {addChildDisabledReason ? (
+            <div className="group relative inline-block">
+              <span
+                aria-disabled="true"
+                className="cursor-not-allowed rounded-lg bg-primary/40 px-3 py-1.5 text-sm font-semibold text-white"
+              >
+                {tFamily("add_child_button")}
+              </span>
+              <div className="pointer-events-none absolute right-0 top-full z-10 mt-1 w-56 rounded-md bg-gray-800 px-3 py-2 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+                {addChildDisabledReason}
+              </div>
+            </div>
+          ) : (
+            <Link
+              href={`/${locale}/profile/dependents/new`}
+              className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90"
+            >
+              {tFamily("add_child_button")}
+            </Link>
+          )}
         </div>
         <p className="mb-4 text-sm text-gray-600">{tFamily("intro")}</p>
 

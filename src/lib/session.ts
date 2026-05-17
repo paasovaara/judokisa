@@ -80,7 +80,7 @@ const ADMIN_ROLE_FIELDS = [
   "isCourseInstructor",
 ] as const;
 
-function hasAdminRole(profile: { [k in (typeof ADMIN_ROLE_FIELDS)[number]]?: boolean } | null | undefined): boolean {
+export function hasAdminRole(profile: { [k in (typeof ADMIN_ROLE_FIELDS)[number]]?: boolean } | null | undefined): boolean {
   if (!profile) return false;
   return ADMIN_ROLE_FIELDS.some((f) => profile[f] === true);
 }

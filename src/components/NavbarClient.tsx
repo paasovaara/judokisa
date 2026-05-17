@@ -13,9 +13,11 @@ type SessionUser = {
 
 export default function NavbarClient({
   currentUser,
+  showAdmin = false,
   loginPath = "/login",
 }: {
   currentUser: SessionUser;
+  showAdmin?: boolean;
   loginPath?: string;
 }) {
   const t = useTranslations("nav");
@@ -29,8 +31,10 @@ export default function NavbarClient({
 
   const navLinks: Array<{ href: string; label: string }> = [
     { href: `/${locale}/competitions`, label: t("competitions") },
-    { href: `/${locale}/admin`, label: t("admin") },
   ];
+  if (currentUser && showAdmin) {
+    navLinks.push({ href: `/${locale}/admin`, label: t("admin") });
+  }
   if (currentUser) {
     navLinks.push({ href: `/${locale}/profile`, label: t("profile") });
   }

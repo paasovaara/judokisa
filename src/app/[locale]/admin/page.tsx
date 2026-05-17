@@ -12,22 +12,23 @@ export default async function AdminLandingPage({
   const tSub = await getTranslations({ locale, namespace: "admin.subnav" });
 
   // Light dashboard counts — fail soft if DB is down.
-  let stats = { competitions: 0, competitors: 0, users: 0, clubs: 0 };
+  let stats = { competitions: 0, competitors: 0, users: 0, referees: 0, clubs: 0 };
   try {
-    const [competitions, competitors, users, clubs] = await Promise.all([
+    const [competitions, competitors, users, referees, clubs] = await Promise.all([
       prisma.competition.count(),
       prisma.competitor.count({ where: { removed: false } }),
       prisma.user.count(),
+      prisma.user.count({ where: { profile: { isReferee: true } } }),
       prisma.club.count(),
     ]);
-    stats = { competitions, competitors, users, clubs };
+    stats = { competitions, competitors, users, referees, clubs };
   } catch {
     // ignore
   }
 
   const cards = [
     { href: `/${locale}/admin/competitions`, label: tSub("competitions"), count: stats.competitions, emoji: "🥋" },
-    { href: `/${locale}/admin/referees`,     label: tSub("referees"),     count: stats.users,        emoji: "🧑‍⚖️" },
+    { href: `/${locale}/admin/referees`,     label: tSub("referees"),     count: stats.referees,     emoji: "🧑‍⚖️" },
     { href: `/${locale}/admin/users`,        label: tSub("users"),        count: stats.users,        emoji: "👤" },
     { href: `/${locale}/admin/clubs`,        label: tSub("clubs"),        count: stats.clubs,        emoji: "🏛️" },
   ];

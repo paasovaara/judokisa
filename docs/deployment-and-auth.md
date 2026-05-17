@@ -125,11 +125,13 @@ The scraper is being deprecated (`spec.md` §2), so admin **is** the production 
 
 1. Build out the planned routes from `spec.md` §6.2:
    - `/auth/login` — email + password form; also a "send me a magic link" option.
-   - `/auth/register` — email + password sign-up; gated by admin-invite-only for the first cut (see §4.6) until self-signup policy is settled.
+   - `/auth/register` — **open self-signup** (email + password + first/last name). The server action calls `supabase.auth.signUp(...)` and, in the same request, creates the linked `User` row with `authUserId` populated plus an empty `UserProfile`. Pre-checks for an existing `User` with the same email so a duplicate signup can't strand an orphan `auth.users` row.
    - `/auth/reset-password` — request reset email; consume reset token.
    - `/auth/callback/[provider]` — placeholder for D26's deferred social providers; can be stubbed.
 2. Remove the existing mock-auth `/login` page and `loginAs` / `logout` server actions.
 3. Display server-side error messages from Supabase Auth responses; use existing `next-intl` keys for translations.
+
+**Email confirmation toggle.** Supabase Auth defaults to requiring a confirmation link before the new account can sign in. Keep this on for v1 — it deters spam signups and gives a free unique-email guarantee. If onboarding friction proves high in practice, the setting can be flipped off in Supabase project settings without code changes; the success message in `SignUpForm` already reads as a "check your inbox" prompt either way.
 
 ### 4.6 Admin / role enforcement
 
@@ -165,8 +167,37 @@ These are not architectural decisions, but should land alongside Phase 1.
    - `Referrer-Policy: strict-origin-when-cross-origin`
    - `X-Content-Type-Options: nosniff`
    - Minimal `Content-Security-Policy` allowing self + Supabase + Vimeo (for video feeds, `spec.md` §5.9).
-3. Rate limit `/auth/login` and `/auth/reset-password` using `@upstash/ratelimit` + Upstash Redis (free tier).
+3. Rate limit `/auth/login`, `/auth/reset-password`, and **`/auth/register`** using `@upstash/ratelimit` + Upstash Redis (free tier). Supabase has its own throttle on the auth endpoints, but adding an app-side limit is cheap and gives us per-IP / per-email control before requests even reach Supabase. Suggested defaults: 5 login attempts / 15 min / IP; 3 signups / hour / IP; 3 reset requests / hour / email.
 4. Rotate the Supabase DB password before first public deploy — it has lived in local `.env` files.
+
+### 4.9 Account-claim flow for admin-created users
+
+**Problem.** When an admin creates a user via `/admin/users/new` (referee onboarding, importing a roster), the resulting `User` row has `authUserId = null` — there's no auth.users row yet, so the user cannot sign in. Today these accounts are indistinguishable in shape from dependent-only accounts (see `docs/guardianship.md` §4.2), which is intentional, but it leaves a gap: an admin-onboarded referee has no way to claim their login.
+
+**Solution.** Allow the signup flow to *link* an existing `User` row instead of always creating a new one when the email matches.
+
+Behaviour:
+1. User visits `/auth/register` and submits with email `referee@example.com`.
+2. Server action looks up `User` by that email.
+3. **If found AND `authUserId IS NULL`**: this is an admin-created shell. Proceed:
+   - Call `supabase.auth.signUp(...)` as usual; auth.users row is created.
+   - Update the existing `User` row: set `authUserId` to the new `auth.users.id`, keep firstName/lastName from the existing record (since the admin probably typed them correctly), and merge any provided values only into empty fields.
+   - The empty `UserProfile` may already exist; upsert if not.
+4. **If found AND `authUserId IS NOT NULL`**: reject — they should sign in or reset their password, not re-register. (Current behaviour.)
+5. **If not found**: open-signup path — create both `User` and `UserProfile`. (Current behaviour.)
+
+Edge cases:
+- **Email confirmation still applies** to the new `auth.users` row even when linking. The User row is updated optimistically; if the user never confirms, `authUserId` points at an unconfirmed Supabase user. That's fine — they just can't sign in until they confirm.
+- **Conflicting names.** Don't silently overwrite `firstName`/`lastName` from the form. Prefer the admin-entered values unless the existing row's name fields are empty.
+- **Roles and admin-set flags.** All `UserProfile` flags (`isReferee`, `isAdministrator`, etc.), `clubId`, `judoGrade`, etc. stay exactly as the admin set them. Signup only links identity, not profile data.
+
+Implementation notes:
+- Lives in `src/app/[locale]/auth/register/actions.ts`. Today that file rejects when a matching email is found; replace the reject branch with the linking logic above.
+- The two-step write (Supabase signUp + Prisma update) is not transactional. If the Prisma update fails after signUp succeeded, the auth.users row remains and the User row stays `authUserId = null` — admin can re-run a backfill matching by email to repair. Surface the error to the user.
+
+### 4.10 (Resolved) Self-signup is implemented
+
+Per the decision recorded in §4.5, open email/password self-signup is the chosen path for v1; the original "invite-only first cut" alternative is dropped. Admin onboarding remains supported through `/admin/users/new`, with the account-claim flow above bridging admin-created shells to logins when the user is ready.
 
 ---
 
@@ -228,7 +259,8 @@ Tasks are grouped by phase; each is intended to be a small, reviewable change.
 - [ ] T12. Replace `src/lib/session.ts`: new `getCurrentUser` reads Supabase session; add `requireAdmin` helper.
 - [ ] T13. Add `withAuth(prisma, userId)` helper that issues `SET LOCAL "request.jwt.claims"` before queries that depend on `auth.uid()`.
 - [ ] T14. Implement `/auth/login` with email/password + magic link.
-- [ ] T15. Implement `/auth/register` (admin-invite-only for the first cut).
+- [ ] T15. Implement `/auth/register` (open self-signup; email + password + first/last name; creates `auth.users` + linked `User` + empty `UserProfile`; rejects on existing-with-authUserId email).
+- [ ] T15a. Account-claim flow (§4.9): when signup email matches an existing `User` with `authUserId IS NULL`, link the rows instead of rejecting.
 - [ ] T16. Implement `/auth/reset-password` (request + consume token).
 - [ ] T17. Stub `/auth/callback/[provider]` for future social providers.
 - [ ] T18. Delete the mock `/login` page and `loginAs` / `logout` server actions.
@@ -245,7 +277,7 @@ Tasks are grouped by phase; each is intended to be a small, reviewable change.
 ### Phase 1G — Security hygiene
 - [ ] T24. Append `&sslmode=require` to `DATABASE_URL` (local + Vercel).
 - [ ] T25. Add security headers in `next.config.ts` per §4.8.
-- [ ] T26. Wire `@upstash/ratelimit` on `/auth/login` and `/auth/reset-password`.
+- [ ] T26. Wire `@upstash/ratelimit` on `/auth/login`, `/auth/reset-password`, and `/auth/register`.
 
 ### Phase 2 — Deployment
 - [ ] T27. Confirm Supabase transaction-mode pooler is enabled.
@@ -284,8 +316,10 @@ Run before flipping the site to a custom domain or announcing publicly.
 
 These don't block the spec but should be resolved before or during implementation:
 
-1. **Self-signup vs. invite-only.** The first cut proposes invite-only registration (admins create user records, send invitation emails). Confirm this matches the federation's intent before building the open `/auth/register` flow.
-2. **Backfill strategy.** Migrating existing `User` rows into `auth.users` — should existing referees/admins be auto-issued password-reset emails, or manually re-invited?
-3. **Service role usage.** Decide which admin server actions (if any) legitimately need `SUPABASE_SERVICE_ROLE_KEY`. Default: none; document every exception.
-4. **Email provider.** Supabase's built-in SMTP is rate-limited (3–4 emails/hour on free tier). Production needs a real SMTP provider (`spec.md` §9.3) — decide between Resend, Postmark, AWS SES.
-5. **Custom domain timing.** Acquire the production domain before or after first deploy? Affects Supabase Auth URL config.
+1. ~~**Self-signup vs. invite-only.**~~ **Resolved (§4.10):** open self-signup at `/auth/register`. Admin onboarding continues to work for shells, bridged by the account-claim flow (§4.9).
+2. **Email confirmation default.** Supabase Auth defaults to requiring email confirmation before the first sign-in. v1 plan is to keep it on (free spam deterrent + unique-email guarantee), and onboarding friction is acceptable for a federation site. Confirm before going public — if friction is unacceptable, flip it off in Supabase project settings (no code change). Re-evaluate once we have signup conversion numbers.
+3. **Backfill strategy.** Migrating existing `User` rows into `auth.users` — should existing referees/admins be auto-issued password-reset emails, or relinked via the §4.9 account-claim flow on their first signup attempt? Recommended: account-claim flow, since it's already on the path and avoids sending mass emails before the auth backend is proven.
+4. **Service role usage.** Decide which admin server actions (if any) legitimately need `SUPABASE_SERVICE_ROLE_KEY`. Default: none; document every exception.
+5. **Email provider.** Supabase's built-in SMTP is rate-limited (3–4 emails/hour on free tier). Production needs a real SMTP provider (`spec.md` §9.3) — decide between Resend, Postmark, AWS SES. **Required before public launch** because the confirmation-email throughput on Supabase's default SMTP will not survive any meaningful signup volume.
+6. **Custom domain timing.** Acquire the production domain before or after first deploy? Affects Supabase Auth URL config.
+7. **Signup rate-limit thresholds.** §4.8 proposes 3 signups / hour / IP. Confirm this is high enough to absorb shared-NAT family signups (e.g. multiple siblings at the same home network creating accounts in succession) and low enough to deter signup spam.

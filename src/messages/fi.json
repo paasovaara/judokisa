@@ -22,6 +22,42 @@
     "tag_user": "Käyttäjä",
     "logout_current": "Kirjaa nykyinen ulos"
   },
+  "auth": {
+    "login": {
+      "title": "Kirjaudu sisään",
+      "intro": "Kirjaudu tilillesi hallinnoidaksesi profiilia, ilmoittautuaksesi kilpailuihin ja muuta.",
+      "email": "Sähköposti",
+      "password": "Salasana",
+      "password_hint": "Vähintään 8 merkkiä.",
+      "sign_in_button": "Kirjaudu",
+      "magic_link_hint": "Et halua käyttää salasanaa? Voimme lähettää sähköpostiisi kertakäyttöisen kirjautumislinkin.",
+      "magic_link_button": "Lähetä linkki",
+      "forgot_password": "Unohditko salasanasi?",
+      "no_account": "Eikö tiliä vielä ole?",
+      "register": "Luo tili"
+    },
+    "register": {
+      "title": "Luo tili",
+      "intro": "Rekisteröidy ilmoittautuaksesi kilpailuihin, hallinnoidaksesi judoprofiiliasi ja lisätäksesi lapsia tilillesi.",
+      "first_name": "Etunimi",
+      "last_name": "Sukunimi",
+      "email": "Sähköposti",
+      "password": "Salasana",
+      "password_hint": "Vähintään 8 merkkiä.",
+      "submit": "Luo tili",
+      "have_account": "Onko sinulla jo tili?",
+      "sign_in": "Kirjaudu sisään",
+      "dev_mode_hint": "Rekisteröinti edellyttää Supabase-tunnistautumisbackendia, jota ei ole määritetty tässä ympäristössä. Käytä kehitysympäristön mock-kirjautumisvalitsinta valitaksesi olemassa olevan käyttäjän.",
+      "back_to_login": "Takaisin kirjautumiseen"
+    },
+    "reset": {
+      "title": "Salasanan palautus",
+      "intro": "Anna sähköpostiosoitteesi, niin lähetämme linkin salasanan palauttamiseksi.",
+      "email": "Sähköposti",
+      "submit": "Lähetä palautuslinkki",
+      "back_to_login": "Takaisin kirjautumiseen"
+    }
+  },
   "profile": {
     "title": "Profiili",
     "tab_overview": "Yleiskatsaus",
@@ -82,6 +118,65 @@
       "col_club": "Seura",
       "won": "Voitto",
       "lost": "Tappio"
+    },
+    "family": {
+      "title": "Perheeni",
+      "intro": "Lapset ja muut huollettavat, joita hallinnoit. Voit katsella ja muokata heidän tietojaan.",
+      "add_child_button": "+ Lisää lapsi",
+      "empty": "Et ole vielä lisännyt lapsia.",
+      "managed_by": "Hallinnoijat:",
+      "viewing_as_banner": "Tarkastelet käyttäjän {name} profiilia",
+      "back_to_my_profile": "← Takaisin omaan profiiliini",
+      "card_no_grade": "Ei vyöarvoa"
+    },
+    "dependents": {
+      "create": {
+        "title": "Lisää lapsi",
+        "intro": "Luo tili huollettavalle lapselle. Vain nimi on pakollinen — muut tiedot voit täyttää myöhemmin.",
+        "submit": "Luo",
+        "cancel": "Peruuta"
+      },
+      "edit": {
+        "title": "Muokkaa huollettavaa",
+        "intro": "Muokataan profiilia: {name}.",
+        "submit": "Tallenna",
+        "cancel": "Peruuta"
+      },
+      "form": {
+        "section_identity": "Henkilötiedot",
+        "section_contact": "Yhteystiedot",
+        "section_judo": "Judo",
+        "section_defaults": "Ilmoittautumisen oletukset",
+        "section_privacy": "Yksityisyys",
+        "first_name": "Etunimi",
+        "last_name": "Sukunimi",
+        "relation": "Suhde",
+        "relation_parent": "Vanhempi",
+        "relation_legal_guardian": "Laillinen huoltaja",
+        "relation_other": "Muu",
+        "phone": "Puhelin",
+        "date_of_birth": "Syntymäaika",
+        "address": "Osoite",
+        "club": "Seura",
+        "geographic_area": "Alue",
+        "judo_grade": "Vyöarvo",
+        "profile_photo": "Profiilikuvan URL",
+        "profile_photo_hint": "Valinnainen — liitä linkki kuvaan.",
+        "default_category_code": "Oletussarja",
+        "default_weight_class": "Oletuspainoluokka",
+        "gdpr_no_sync": "Älä synkronoi SuomiSportista",
+        "gdpr_no_sync_hint": "Rastita, jos tätä profiilia ei saa ylikirjoittaa SuomiSport-synkronoinnissa."
+      },
+      "remove": {
+        "button": "Poista perheestäni",
+        "title": "Poistetaanko huollettava?",
+        "body_sole_guardian": "Olet ainoa aktiivinen huoltaja. Poistamisen jälkeen käyttäjän {name} tili passivoidaan. Voit palauttaa myöhemmin.",
+        "body_other_guardians": "Muita huoltajia on edelleen aktiivisina. Vain sinun huoltajuussuhteesi peruutetaan; {name}:n tili pysyy aktiivisena heille.",
+        "confirm": "Poista",
+        "cancel": "Peruuta",
+        "restore_button": "Palauta",
+        "blocked_logged_in": "Tällä tilillä on oma kirjautuminen. Vain käyttäjä itse tai ylläpitäjä voi passivoida sen."
+      }
     }
   },
   "home": {
@@ -303,6 +398,37 @@
         "isReferee": "Tuomari",
         "isJudoShiaiOperator": "JudoShiai-operaattori",
         "isVideoOperator": "Video-operaattori"
+      },
+      "guardianships": {
+        "section_title": "Huoltajuussuhteet",
+        "section_hint": "Lisää tai peruuta huoltajuussuhteita käyttäjien puolesta. Vanhemmat hallinnoivat näitä yleensä itse omasta profiilistaan.",
+        "dependents_title": "Käyttäjän huollettavat",
+        "dependents_empty": "Ei huollettavia.",
+        "guardians_title": "Käyttäjän huoltajat",
+        "guardians_empty": "Ei huoltajia.",
+        "col_user": "Käyttäjä",
+        "col_relation": "Suhde",
+        "col_status": "Tila",
+        "col_created": "Luotu",
+        "col_revoked": "Peruutettu",
+        "col_action": "",
+        "status_active": "Aktiivinen",
+        "status_revoked": "Peruutettu",
+        "by": "—",
+        "revoke": "Peruuta",
+        "restore": "Palauta",
+        "link_dependent_title": "Lisää huollettavaksi",
+        "link_guardian_title": "Lisää huoltajaksi",
+        "link_hint": "Anna käyttäjän ID. Löydät ID:t käyttäjälistasta.",
+        "other_user_id": "Käyttäjän ID",
+        "relation": "Suhde",
+        "relation_parent": "Vanhempi",
+        "relation_legal_guardian": "Laillinen huoltaja",
+        "relation_other": "Muu",
+        "link_button": "Lisää",
+        "reactivate_section_title": "Tili",
+        "reactivate_hint": "Tämä tili on passivoituna (todennäköisesti koska viimeinen huoltaja peruutti suhteensa). Palauta tili aktiiviseksi.",
+        "reactivate_button": "Palauta tili"
       }
     },
     "tabs": {

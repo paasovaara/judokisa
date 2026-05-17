@@ -2,11 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/session";
 import type { RefereeInviteStatus } from "@prisma/client";
 
 const STATUSES = ["ASKED", "DECLINED", "PROMISED", "AGREED", "PRESENT"] as const;
 
 export async function inviteReferee(locale: string, competitionId: string, refereeId: string) {
+  await requireAdmin(locale);
   if (!refereeId) return;
   await prisma.competitionRefereeInvitation.upsert({
     where: { competitionId_refereeId: { competitionId, refereeId } },
@@ -22,6 +24,7 @@ export async function setInvitationStatus(
   refereeId: string,
   status: string,
 ) {
+  await requireAdmin(locale);
   if (!(STATUSES as readonly string[]).includes(status)) return;
   await prisma.competitionRefereeInvitation.update({
     where: { competitionId_refereeId: { competitionId, refereeId } },
@@ -34,6 +37,7 @@ export async function setInvitationStatus(
 }
 
 export async function uninviteReferee(locale: string, competitionId: string, refereeId: string) {
+  await requireAdmin(locale);
   await prisma.competitionRefereeInvitation.delete({
     where: { competitionId_refereeId: { competitionId, refereeId } },
   });

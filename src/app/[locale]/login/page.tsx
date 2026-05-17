@@ -32,7 +32,7 @@ export default async function LoginPage({
     id: string;
     firstName: string;
     lastName: string;
-    email: string;
+    email: string | null;
     profile: { isAdministrator: boolean; isReferee: boolean; geographicArea: string | null } | null;
   }> = [];
   try {
@@ -103,7 +103,7 @@ export default async function LoginPage({
                     <td className="py-2.5 pl-4 pr-3 font-medium text-gray-900">
                       {fullName(u.firstName, u.lastName)}
                     </td>
-                    <td className="py-2.5 pr-3 text-gray-600">{u.email}</td>
+                    <td className="py-2.5 pr-3 text-gray-600">{u.email ?? "—"}</td>
                     <td className="py-2.5 pr-3">
                       <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                         {tag}

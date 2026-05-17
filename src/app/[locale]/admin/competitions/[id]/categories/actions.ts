@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/session";
 import type { CategoryGender } from "@prisma/client";
 import { DEFAULT_CATEGORIES } from "@/lib/categories";
 
@@ -21,6 +22,7 @@ function pickGender(raw: string): CategoryGender {
 }
 
 export async function createCategory(locale: string, competitionId: string, form: FormData) {
+  await requireAdmin(locale);
   const code = ((form.get("code") ?? "") as string).trim();
   const nameEn = ((form.get("nameEn") ?? "") as string).trim();
   const nameFi = ((form.get("nameFi") ?? "") as string).trim();
@@ -43,6 +45,7 @@ export async function createCategory(locale: string, competitionId: string, form
 }
 
 export async function updateCategory(locale: string, competitionId: string, id: string, form: FormData) {
+  await requireAdmin(locale);
   await prisma.competitionCategory.update({
     where: { id },
     data: {
@@ -59,11 +62,13 @@ export async function updateCategory(locale: string, competitionId: string, id: 
 }
 
 export async function deleteCategory(locale: string, competitionId: string, id: string) {
+  await requireAdmin(locale);
   await prisma.competitionCategory.delete({ where: { id } });
   revalidatePath(`/${locale}/admin/competitions/${competitionId}/categories`);
 }
 
 export async function seedDefaultCategories(locale: string, competitionId: string) {
+  await requireAdmin(locale);
   // Only adds categories whose code does not already exist for this competition.
   const existing = await prisma.competitionCategory.findMany({
     where: { competitionId },

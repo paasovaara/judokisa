@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/session";
 import type {
   CompetitionType,
   CompetitionLevel,
@@ -86,6 +87,7 @@ function buildData(form: FormData) {
 }
 
 export async function createCompetition(locale: string, form: FormData) {
+  await requireAdmin(locale);
   const data = buildData(form);
   const created = await prisma.competition.create({ data });
   revalidatePath(`/${locale}/admin/competitions`);
@@ -93,6 +95,7 @@ export async function createCompetition(locale: string, form: FormData) {
 }
 
 export async function updateCompetition(locale: string, id: string, form: FormData) {
+  await requireAdmin(locale);
   const data = buildData(form);
   await prisma.competition.update({ where: { id }, data });
   revalidatePath(`/${locale}/admin/competitions`);
@@ -102,6 +105,7 @@ export async function updateCompetition(locale: string, id: string, form: FormDa
 }
 
 export async function deleteCompetition(locale: string, id: string) {
+  await requireAdmin(locale);
   await prisma.competition.delete({ where: { id } });
   revalidatePath(`/${locale}/admin/competitions`);
   redirect(`/${locale}/admin/competitions`);

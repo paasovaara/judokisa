@@ -9,6 +9,7 @@ import {
   countUserRefereeJobs,
   countUserRegistrations,
 } from "@/lib/profileHistory";
+import { getDependents, getGuardians } from "@/lib/guardianship";
 
 export default async function ProfileOverviewPage({
   params,
@@ -18,13 +19,17 @@ export default async function ProfileOverviewPage({
   const { locale } = await params;
   const user = await requireCurrentUser(locale);
   const t = await getTranslations({ locale, namespace: "profile" });
+  const tFamily = await getTranslations({ locale, namespace: "profile.family" });
 
-  const [resultsCount, matchesCount, refereeCount, registrationsCount] = await Promise.all([
-    countUserResults(user.id),
-    countUserMatches(user.id),
-    countUserRefereeJobs(user.id),
-    countUserRegistrations(user.id),
-  ]);
+  const [resultsCount, matchesCount, refereeCount, registrationsCount, dependents, guardiansOfMe] =
+    await Promise.all([
+      countUserResults(user.id),
+      countUserMatches(user.id),
+      countUserRefereeJobs(user.id),
+      countUserRegistrations(user.id),
+      getDependents(user.id),
+      getGuardians(user.id),
+    ]);
 
   const p = user.profile;
   const roles: RoleKey[] = p ? ROLE_KEYS.filter((k) => p[k]) : [];
@@ -113,6 +118,81 @@ export default async function ProfileOverviewPage({
           {t("view_history")}
         </Link>
       </div>
+
+      {/* My family — children / dependents the parent guardians. Always shows
+          the "+ Add child" CTA, even with no dependents yet. */}
+      <section className="mt-10 border-t border-gray-200 pt-8">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">{tFamily("title")}</h2>
+          <Link
+            href={`/${locale}/profile/dependents/new`}
+            className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90"
+          >
+            {tFamily("add_child_button")}
+          </Link>
+        </div>
+        <p className="mb-4 text-sm text-gray-600">{tFamily("intro")}</p>
+
+        {dependents.length === 0 ? (
+          <p className="text-sm text-gray-500">{tFamily("empty")}</p>
+        ) : (
+          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {dependents.map((d) => (
+              <li key={d.id}>
+                <Link
+                  href={`/${locale}/profile/dependents/${d.id}`}
+                  className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 transition-colors hover:border-primary"
+                >
+                  {d.profile?.profilePhoto ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={d.profile.profilePhoto}
+                      alt=""
+                      className="h-12 w-12 rounded-full border border-gray-200 object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                      {d.firstName.charAt(0)}
+                      {d.lastName.charAt(0)}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-gray-900">
+                      {fullName(d.firstName, d.lastName)}
+                    </p>
+                    <p className="truncate text-xs text-gray-500">
+                      {d.profile?.judoGrade
+                        ? `${judoGradeEmoji(d.profile.judoGrade)} ${
+                            judoGradeLabel(d.profile.judoGrade) ?? d.profile.judoGrade
+                          }`
+                        : tFamily("card_no_grade")}
+                      {d.profile?.club ? ` · ${d.profile.club.displayName}` : ""}
+                    </p>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* Informational: who can act on my data. Read-only — dependents cannot
+          reach into their guardian's profile (deliberate asymmetry). */}
+      {guardiansOfMe.length > 0 && (
+        <section className="mt-8 rounded-xl border border-gray-200 bg-gray-50 p-4">
+          <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            {tFamily("managed_by")}
+          </h2>
+          <ul className="space-y-1 text-sm text-gray-700">
+            {guardiansOfMe.map((g) => (
+              <li key={g.guardian.id}>
+                {fullName(g.guardian.firstName, g.guardian.lastName)}
+                <span className="ml-2 text-xs text-gray-400">{g.relation}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

@@ -22,6 +22,42 @@
     "tag_user": "User",
     "logout_current": "Log out current user"
   },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "intro": "Sign in to your account to manage your profile, register for competitions, and more.",
+      "email": "Email",
+      "password": "Password",
+      "password_hint": "At least 8 characters.",
+      "sign_in_button": "Sign in",
+      "magic_link_hint": "Prefer not to use a password? We can email you a one-time sign-in link.",
+      "magic_link_button": "Send link",
+      "forgot_password": "Forgot your password?",
+      "no_account": "No account yet?",
+      "register": "Create one"
+    },
+    "register": {
+      "title": "Create an account",
+      "intro": "Sign up to register for competitions, manage your judo profile, and add children to your account.",
+      "first_name": "First name",
+      "last_name": "Last name",
+      "email": "Email",
+      "password": "Password",
+      "password_hint": "At least 8 characters.",
+      "submit": "Create account",
+      "have_account": "Already have an account?",
+      "sign_in": "Sign in",
+      "dev_mode_hint": "Sign-up requires the Supabase auth backend, which is not configured in this environment. Use the dev mock login picker to pick an existing user.",
+      "back_to_login": "Back to sign in"
+    },
+    "reset": {
+      "title": "Reset password",
+      "intro": "Enter your email and we'll send you a link to reset your password.",
+      "email": "Email",
+      "submit": "Send reset link",
+      "back_to_login": "Back to sign in"
+    }
+  },
   "profile": {
     "title": "Profile",
     "tab_overview": "Overview",
@@ -82,6 +118,65 @@
       "col_club": "Club",
       "won": "Win",
       "lost": "Loss"
+    },
+    "family": {
+      "title": "My family",
+      "intro": "Children and other dependents you manage. Their data is yours to view and edit.",
+      "add_child_button": "+ Add child",
+      "empty": "You haven't added any children yet.",
+      "managed_by": "Managed by:",
+      "viewing_as_banner": "Viewing {name}'s profile",
+      "back_to_my_profile": "← Back to my profile",
+      "card_no_grade": "No judo grade yet"
+    },
+    "dependents": {
+      "create": {
+        "title": "Add a child",
+        "intro": "Create an account for a child you guardian. Only name is required — everything else can be filled in later.",
+        "submit": "Create",
+        "cancel": "Cancel"
+      },
+      "edit": {
+        "title": "Edit dependent",
+        "intro": "Editing {name}'s profile.",
+        "submit": "Save",
+        "cancel": "Cancel"
+      },
+      "form": {
+        "section_identity": "Identity",
+        "section_contact": "Contact",
+        "section_judo": "Judo",
+        "section_defaults": "Registration defaults",
+        "section_privacy": "Privacy",
+        "first_name": "First name",
+        "last_name": "Last name",
+        "relation": "Relationship",
+        "relation_parent": "Parent",
+        "relation_legal_guardian": "Legal guardian",
+        "relation_other": "Other",
+        "phone": "Phone",
+        "date_of_birth": "Date of birth",
+        "address": "Address",
+        "club": "Club",
+        "geographic_area": "Geographic area",
+        "judo_grade": "Judo grade",
+        "profile_photo": "Profile photo URL",
+        "profile_photo_hint": "Optional — paste a URL to a photo.",
+        "default_category_code": "Default category",
+        "default_weight_class": "Default weight class",
+        "gdpr_no_sync": "Do not sync from SuomiSport",
+        "gdpr_no_sync_hint": "Tick if this profile must not be overwritten by the SuomiSport background sync."
+      },
+      "remove": {
+        "button": "Remove from my family",
+        "title": "Remove this dependent?",
+        "body_sole_guardian": "You are the only active guardian. Removing will deactivate {name}'s account. You can restore later.",
+        "body_other_guardians": "Other guardians remain active. Only your guardianship link will be revoked; {name}'s account stays active for them.",
+        "confirm": "Remove",
+        "cancel": "Cancel",
+        "restore_button": "Restore",
+        "blocked_logged_in": "This account has its own login. Only the user themselves or an admin can deactivate it."
+      }
     }
   },
   "home": {
@@ -303,6 +398,37 @@
         "isReferee": "Referee",
         "isJudoShiaiOperator": "JudoShiai operator",
         "isVideoOperator": "Video operator"
+      },
+      "guardianships": {
+        "section_title": "Guardian relationships",
+        "section_hint": "Add or revoke guardian links on behalf of users. Parents normally manage these themselves from their own profile.",
+        "dependents_title": "Dependents of this user",
+        "dependents_empty": "No dependents.",
+        "guardians_title": "Guardians of this user",
+        "guardians_empty": "No guardians.",
+        "col_user": "User",
+        "col_relation": "Relation",
+        "col_status": "Status",
+        "col_created": "Created",
+        "col_revoked": "Revoked",
+        "col_action": "",
+        "status_active": "Active",
+        "status_revoked": "Revoked",
+        "by": "by",
+        "revoke": "Revoke",
+        "restore": "Restore",
+        "link_dependent_title": "Link as dependent",
+        "link_guardian_title": "Link as guardian",
+        "link_hint": "Enter a user ID. Find IDs by visiting the users list.",
+        "other_user_id": "User ID",
+        "relation": "Relation",
+        "relation_parent": "Parent",
+        "relation_legal_guardian": "Legal guardian",
+        "relation_other": "Other",
+        "link_button": "Link",
+        "reactivate_section_title": "Account",
+        "reactivate_hint": "This account is inactive (likely because the last guardian revoked their link). Reactivate to bring it back.",
+        "reactivate_button": "Reactivate account"
       }
     },
     "tabs": {

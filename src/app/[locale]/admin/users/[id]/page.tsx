@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import UserForm from "../UserForm";
 import { deleteUser, updateUser } from "../actions";
 import { buildUserFormLabels } from "../labels";
+import GuardianshipSection from "./GuardianshipSection";
 
 export default async function EditUserPage({
   params,
@@ -72,7 +73,7 @@ export default async function EditUserPage({
       <h1 className="mb-1 text-2xl font-bold text-gray-900">
         {user.firstName} {user.lastName}
       </h1>
-      <p className="mb-6 text-sm text-gray-500">{user.email}</p>
+      <p className="mb-6 text-sm text-gray-500">{user.email ?? "—"}</p>
 
       <UserForm
         action={update}
@@ -108,6 +109,12 @@ export default async function EditUserPage({
           blacklisted: user.profile?.blacklisted ?? false,
           gdprNoSync: user.profile?.gdprNoSync ?? false,
         }}
+      />
+
+      <GuardianshipSection
+        locale={locale}
+        centerUserId={user.id}
+        profileActive={user.profile?.active ?? true}
       />
 
       <form action={deleteAction} className="mt-12 rounded-xl border border-danger/30 bg-red-50/50 p-6">

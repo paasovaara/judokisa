@@ -11,7 +11,13 @@ type SessionUser = {
   lastName: string;
 } | null;
 
-export default function NavbarClient({ currentUser }: { currentUser: SessionUser }) {
+export default function NavbarClient({
+  currentUser,
+  loginPath = "/login",
+}: {
+  currentUser: SessionUser;
+  loginPath?: string;
+}) {
   const t = useTranslations("nav");
   const locale = useLocale();
   const pathname = usePathname();
@@ -70,9 +76,9 @@ export default function NavbarClient({ currentUser }: { currentUser: SessionUser
             </form>
           ) : (
             <Link
-              href={`/${locale}/login`}
+              href={`/${locale}${loginPath}`}
               className={`text-sm font-medium transition-colors ${
-                isActive(`/${locale}/login`)
+                isActive(`/${locale}${loginPath}`)
                   ? "text-white underline underline-offset-4"
                   : "text-blue-100 hover:text-white"
               }`}
@@ -142,7 +148,7 @@ export default function NavbarClient({ currentUser }: { currentUser: SessionUser
             </form>
           ) : (
             <Link
-              href={`/${locale}/login`}
+              href={`/${locale}${loginPath}`}
               onClick={() => setMenuOpen(false)}
               className="block border-t border-primary-dark px-4 py-3 text-sm font-medium text-blue-100"
             >

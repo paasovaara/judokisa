@@ -3,7 +3,7 @@
 import Link from "next/link";
 
 interface FormDefaults {
-  email?: string;
+  email?: string | null;
   firstName?: string;
   lastName?: string;
   phone?: string | null;

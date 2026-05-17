@@ -1,8 +1,10 @@
 // Prisma schema — target spec from docs/spec.md §5
 // In-scope models for the current implementation wave.
-// Out of scope (deferred): MatchHistory, TeamEntry, Course, SuomiSport caches,
-// auth/session models. The User + UserProfile + CompetitionRefereeInvitation
-// models are included as data tables only — no auth wired in yet.
+// Out of scope (deferred): MatchHistory, TeamEntry, Course, SuomiSport caches.
+// Auth is being wired via Supabase Auth (docs/deployment-and-auth.md);
+// User.authUserId links a User row to the corresponding auth.users row when
+// the user has their own login. Dependent-only users (see docs/guardianship.md)
+// have authUserId=null.
 
 generator client {
   provider = "prisma-client-js"
@@ -99,6 +101,17 @@ enum RefereeInviteStatus {
   PROMISED
   AGREED
   PRESENT
+}
+
+enum GuardianshipRelation {
+  PARENT
+  LEGAL_GUARDIAN
+  OTHER
+}
+
+enum GuardianshipStatus {
+  ACTIVE
+  REVOKED
 }
 
 // ---------------------------------------------------------------------------
@@ -331,12 +344,17 @@ model VideoFeed {
 // ---------------------------------------------------------------------------
 
 model User {
-  id        String       @id @default(cuid())
-  email     String       @unique
-  password  String?
-  firstName String
-  lastName  String
-  profile   UserProfile?
+  id         String       @id @default(cuid())
+  // Link to the Supabase auth.users row. Null for dependent-only accounts
+  // (children whose parent created the row but who haven't claimed a login).
+  authUserId String?      @unique
+  // Optional: dependent-only accounts have no email until the user claims a
+  // login. Once a login is claimed, email is populated and authUserId set.
+  email      String?      @unique
+  password   String?
+  firstName  String
+  lastName   String
+  profile    UserProfile?
 
   responsibleForCompetitions   Competition[]                  @relation("ResponsibleUser")
   managedCompetitions          Competition[]                  @relation("CompetitionManager")
@@ -349,6 +367,13 @@ model User {
   matchesAsAthlete1            Match[]                        @relation("MatchAthlete1")
   matchesAsAthlete2            Match[]                        @relation("MatchAthlete2")
   refereeInvitations           CompetitionRefereeInvitation[]
+
+  // Guardianship: a user can have multiple dependents (children) and be a
+  // dependent of multiple guardians (e.g. two divorced parents).
+  guardianFor          Guardianship[] @relation("GuardianRelations")
+  guardedBy            Guardianship[] @relation("DependentRelations")
+  createdGuardianships Guardianship[] @relation("GuardianshipCreatedBy")
+  revokedGuardianships Guardianship[] @relation("GuardianshipRevokedBy")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -402,4 +427,37 @@ model CompetitionRefereeInvitation {
 
   @@id([competitionId, refereeId])
   @@index([refereeId])
+}
+
+// ---------------------------------------------------------------------------
+// Guardianship — parent/legal-guardian relationships
+//
+// Many-to-many between users. A guardian can act on a dependent's behalf
+// wherever they could act on their own (read profile, edit profile data,
+// register the dependent for competitions, view history). Status carries
+// the lifecycle: ACTIVE rows grant authority; REVOKED rows preserve audit.
+// Created and revoked by either the guardian themselves (self-service via
+// /profile/dependents/*) or an admin (override via /admin/users/[id]).
+// See docs/guardianship.md.
+// ---------------------------------------------------------------------------
+
+model Guardianship {
+  guardianId  String
+  dependentId String
+  relation    GuardianshipRelation @default(PARENT)
+  status      GuardianshipStatus   @default(ACTIVE)
+  createdAt   DateTime             @default(now())
+  createdById String?
+  revokedAt   DateTime?
+  revokedById String?
+
+  guardian  User  @relation("GuardianRelations",       fields: [guardianId],   references: [id], onDelete: Cascade)
+  dependent User  @relation("DependentRelations",      fields: [dependentId],  references: [id], onDelete: Cascade)
+  createdBy User? @relation("GuardianshipCreatedBy",   fields: [createdById],  references: [id], onDelete: SetNull)
+  revokedBy User? @relation("GuardianshipRevokedBy",   fields: [revokedById],  references: [id], onDelete: SetNull)
+
+  @@id([guardianId, dependentId])
+  @@index([guardianId])
+  @@index([dependentId])
+  @@index([status])
 }

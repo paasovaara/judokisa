@@ -44,7 +44,7 @@ export default async function AdminUsersPage({
     id: string;
     firstName: string;
     lastName: string;
-    email: string;
+    email: string | null;
     profile:
       | (Record<RoleKey, boolean> & {
           geographicArea: string | null;
@@ -149,7 +149,7 @@ export default async function AdminUsersPage({
                         {fullName(u.firstName, u.lastName)}
                       </Link>
                     </td>
-                    <td className="py-2.5 pr-3 text-gray-600">{u.email}</td>
+                    <td className="py-2.5 pr-3 text-gray-600">{u.email ?? "—"}</td>
                     <td className="py-2.5 pr-3 text-gray-600">{u.profile?.geographicArea ?? "—"}</td>
                     <td className="py-2.5 pr-3 text-gray-600">{u.profile?.refereeLicenseLevel ?? "—"}</td>
                     <td className="py-2.5 pr-3">

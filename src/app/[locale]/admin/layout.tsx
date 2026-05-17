@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import AdminSubNav from "@/components/AdminSubNav";
+import { requireAdmin } from "@/lib/session";
 
 export default async function AdminLayout({
   children,
@@ -9,11 +10,12 @@ export default async function AdminLayout({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  // Gate the whole admin subtree on at least one admin-relevant role flag.
+  // Server actions individually re-check (defence in depth) — see each
+  // admin/*/actions.ts file.
+  await requireAdmin(locale);
   const t = await getTranslations({ locale, namespace: "admin.subnav" });
 
-  // No role enforcement in this implementation wave (auth out of scope).
-  // All subnav items are always visible. Items marked `placeholder` are
-  // not yet implemented and link to /admin (the landing page).
   const items = [
     { href: `/${locale}/admin/competitions`, label: t("competitions"), emoji: "🥋" },
     { href: `/${locale}/admin/users`,        label: t("users"),        emoji: "👤" },

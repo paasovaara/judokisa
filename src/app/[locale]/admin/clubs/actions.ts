@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/session";
 
 function str(form: FormData, key: string): string {
   return ((form.get(key) ?? "") as string).trim();
@@ -24,6 +25,7 @@ function buildData(form: FormData) {
 }
 
 export async function createClub(locale: string, form: FormData) {
+  await requireAdmin(locale);
   const data = buildData(form);
   const created = await prisma.club.create({ data });
   revalidatePath(`/${locale}/admin/clubs`);
@@ -31,6 +33,7 @@ export async function createClub(locale: string, form: FormData) {
 }
 
 export async function updateClub(locale: string, id: string, form: FormData) {
+  await requireAdmin(locale);
   const data = buildData(form);
   await prisma.club.update({ where: { id }, data });
   revalidatePath(`/${locale}/admin/clubs`);
@@ -39,6 +42,7 @@ export async function updateClub(locale: string, id: string, form: FormData) {
 }
 
 export async function deleteClub(locale: string, id: string) {
+  await requireAdmin(locale);
   await prisma.club.delete({ where: { id } });
   revalidatePath(`/${locale}/admin/clubs`);
   redirect(`/${locale}/admin/clubs`);

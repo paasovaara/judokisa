@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/session";
 
 export async function createVideoFeed(locale: string, competitionId: string, form: FormData) {
+  await requireAdmin(locale);
   const name = ((form.get("name") ?? "") as string).trim();
   const url = ((form.get("url") ?? "") as string).trim();
   const tatamiRaw = ((form.get("tatamiNumber") ?? "") as string).trim();
@@ -22,6 +24,7 @@ export async function createVideoFeed(locale: string, competitionId: string, for
 }
 
 export async function deleteVideoFeed(locale: string, competitionId: string, id: string) {
+  await requireAdmin(locale);
   await prisma.videoFeed.delete({ where: { id } });
   revalidatePath(`/${locale}/admin/competitions/${competitionId}/video-feeds`);
 }

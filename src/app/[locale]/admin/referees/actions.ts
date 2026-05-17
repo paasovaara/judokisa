@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/session";
 import type { GeographicArea, JudoGrade, RefereeLicenseLevel } from "@prisma/client";
 
 const AREAS = ["LOU", "LAN", "POH", "ITA", "KAA", "ETE"] as const;
@@ -72,6 +73,7 @@ async function buildProfileData(form: FormData) {
 }
 
 export async function createReferee(locale: string, form: FormData) {
+  await requireAdmin(locale);
   const user = buildUserData(form);
   if (!user.email || !user.firstName || !user.lastName) {
     throw new Error("email, firstName, lastName required");
@@ -88,6 +90,7 @@ export async function createReferee(locale: string, form: FormData) {
 }
 
 export async function updateReferee(locale: string, id: string, form: FormData) {
+  await requireAdmin(locale);
   const user = buildUserData(form);
   const profile = await buildProfileData(form);
   await prisma.user.update({
@@ -108,6 +111,7 @@ export async function updateReferee(locale: string, id: string, form: FormData) 
 }
 
 export async function deleteReferee(locale: string, id: string) {
+  await requireAdmin(locale);
   await prisma.user.delete({ where: { id } });
   revalidatePath(`/${locale}/admin/referees`);
   redirect(`/${locale}/admin/referees`);

@@ -10,7 +10,7 @@ import {
 } from "@/lib/categories";
 
 interface FormDefaults {
-  email?: string;
+  email?: string | null;
   firstName?: string;
   lastName?: string;
   phone?: string | null;
